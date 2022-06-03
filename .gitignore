@@ -1,0 +1,68 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# binaries
+test
+
+# garbage
+.DS_STORE
+.dirstamp
+
+# tempfiles
+.*~
+*~
+
+# autotools nonsense
+.deps/*
+*/.deps/*
+*/*/.deps/*
+missing
+stamp-h1
+Makefile
+Makefile.in
+ylwrap
+ar-lib
+test-driver
+depcomp
+configure
+aclocal.m4
+autom4te.cache/
+compile
+config.h
+config.h.in
+config.log
+config.status
+install-sh
+
+#generated
+wasm_api.pc
