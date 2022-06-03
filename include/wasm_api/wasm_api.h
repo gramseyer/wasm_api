@@ -35,7 +35,7 @@ public:
 	WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES);
 
 	WasmContext(const WasmContext&) = delete;
-	WasmContext(WasmContext&&) = delete
+	WasmContext(WasmContext&&) = delete;
 	WasmContext& operator=(const WasmContext&) = delete;
  
 	std::unique_ptr<WasmRuntime>
@@ -54,11 +54,17 @@ class WasmRuntime {
 
 	friend class detail::Wasm3_WasmContext;
 
+	template<typename ret, typename... Args>
+	void _link_fn(
+		const char* module,
+		const char* fn_name,
+		ret (*f)(Args...));
+
 	template<typename... Args>
 	void _link_fn(
 		const char* module,
 		const char* fn_name,
-		auto (*f)(Args...));
+		void (*f)(Args...));
 
 public:
 

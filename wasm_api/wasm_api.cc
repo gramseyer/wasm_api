@@ -56,21 +56,45 @@ WasmRuntime::invoke(const char* method_name)
 	return impl->invoke(method_name);
 }
 
+template<typename ret, typename... Args>
+void 
+WasmRuntime::_link_fn(
+	const char* module,
+	const char* fn_name,
+	ret (*f)(Args...))
+{
+	impl->link_fn(module, fn_name, f);
+}
+
 template<typename... Args>
 void 
 WasmRuntime::_link_fn(
 	const char* module,
 	const char* fn_name,
-	auto (*f)(Args...))
+	void (*f)(Args...))
 {
 	impl->link_fn(module, fn_name, f);
 }
 
-template<>
-void WasmRuntime::_link_fn<uint32_t, uint32_t>(
-	const char* module,
-	const char* fn_name,
-	uint32_t (*f)(uint32_t, uint32_t));
+#define LINK_DECL(...) \
+template \
+void WasmRuntime::_link_fn<uint32_t, __VA_ARGS__ >( \
+	const char* module, \
+	const char* fn_name, \
+	uint32_t (*f)( __VA_ARGS__ )); \
+template \
+void WasmRuntime::_link_fn< __VA_ARGS__ >( \
+	const char* module, \
+	const char* fn_name, \
+	void (*f)( __VA_ARGS__ ));
+
+
+LINK_DECL(uint32_t)
+LINK_DECL(uint32_t, uint32_t)
+LINK_DECL(uint32_t, uint32_t, uint32_t)
+LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t)
+LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
+LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
 
 int32_t 
 WasmRuntime::memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const
