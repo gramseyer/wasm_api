@@ -83,11 +83,15 @@ void WasmRuntime::_link_fn<uint32_t, __VA_ARGS__ >( \
 	const char* fn_name, \
 	uint32_t (*f)( __VA_ARGS__ )); \
 template \
+void WasmRuntime::_link_fn<int32_t, __VA_ARGS__ >( \
+	const char* module, \
+	const char* fn_name, \
+	int32_t (*f)( __VA_ARGS__ )); \
+template \
 void WasmRuntime::_link_fn< __VA_ARGS__ >( \
 	const char* module, \
 	const char* fn_name, \
 	void (*f)( __VA_ARGS__ ));
-
 
 LINK_DECL(uint32_t)
 LINK_DECL(uint32_t, uint32_t)
