@@ -1,6 +1,4 @@
 
-
-
 WASM3_SRCS = \
 	wasm3/source/m3_api_libc.c \
 	wasm3/source/m3_api_meta_wasi.c \
@@ -22,11 +20,34 @@ WASM_API_SRCS = \
 	wasm_api/wasm_api.cc \
 	wasm_api/wasm3_api.cc
 
+TEST_SRCS = \
+	tests/wasm3_test.cc \
+	tests/mem_test.cc
+
+TEST_WATS = \
+	$(wildcard tests/wat/*.wat)
+
+TEST_WASMS = ${TEST_WATS:.wat=.wasm}
+
+.wat.wasm:
+	wat2wasm -o $@ $<
+
 lib_LIBRARIES = libwasmapi.a
 
-libwasmapi_a_SOURCES = $(WASM3_SRCS) wasm_api/wasm_api.cc wasm_api/wasm3_api.cc
+libwasmapi_a_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS)
 
 $(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I./include
+
+test_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS) $(TEST_SRCS) test.cc
+
+$(TEST_SRCS:.cc=.o): CXXFLAGS += $(Catch2_CFLAGS) -I./include
+test.o : CXXFLAGS += $(Catch2_CFLAGS)
+test.o : $(TEST_WASMS)
+
+check_PROGRAMS = test
+TESTS = test
+
+test_LDFLAGS = $(Catch2_LIBS)
 
 
 

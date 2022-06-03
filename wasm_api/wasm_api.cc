@@ -11,13 +11,31 @@ namespace wasm_api
 //	{}
 
 WasmContext::WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES)
-	: impl(std::make_unique<detail::Wasm3_WasmContext>(script_db, MAX_STACK_BYTES))
+	: impl(new detail::Wasm3_WasmContext (script_db, MAX_STACK_BYTES))
 	{}
 
 std::unique_ptr<WasmRuntime>
 WasmContext::new_runtime_instance(Hash const& script_addr)
 {
 	return impl->new_runtime_instance(script_addr);
+}
+
+WasmContext::~WasmContext()
+{
+	if (impl)
+	{
+		delete impl;
+	}
+	impl = nullptr;
+}
+
+WasmRuntime::~WasmRuntime()
+{
+	if (impl)
+	{
+		delete impl;
+	}
+	impl = nullptr;
 }
 
 std::pair<uint8_t*, uint32_t> 

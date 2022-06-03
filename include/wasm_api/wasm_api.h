@@ -28,7 +28,7 @@ class WasmRuntime;
 class WasmContext {
 
 private:
-	std::unique_ptr<detail::Wasm3_WasmContext> impl;
+	detail::Wasm3_WasmContext* impl;
 
 public:
 
@@ -36,11 +36,13 @@ public:
  
 	std::unique_ptr<WasmRuntime>
 	new_runtime_instance(Hash const& script_addr);
+
+	~WasmContext();
 };
 
 class WasmRuntime {
 
-	std::unique_ptr<detail::Wasm3_WasmRuntime> impl;
+	detail::Wasm3_WasmRuntime* impl;
 
 	std::pair<uint8_t*, uint32_t> get_memory();
 
@@ -58,7 +60,7 @@ public:
 
 	template<typename... ImplArgs>
 	WasmRuntime(ImplArgs&&... args)
-		: impl(std::make_unique<detail::Wasm3_WasmRuntime>(std::move(args)...))
+		: impl(new detail::Wasm3_WasmRuntime(std::move(args)...))
 		{}
 	 
 	int32_t invoke(const char* method_name);
@@ -154,6 +156,8 @@ public:
 	uint32_t memset(uint32_t dst, uint8_t val, uint32_t len);
 
 	uint32_t safe_memcpy(uint32_t dst, uint32_t src, uint32_t len);
+
+	~WasmRuntime();
 };
 
 } /* wasm_api */

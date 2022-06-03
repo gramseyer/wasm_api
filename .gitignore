@@ -64,5 +64,10 @@ config.log
 config.status
 install-sh
 
+#autocheck nonsense
+test.log
+test.trs
+test-suite.log
+
 #generated
 wasm_api.pc
