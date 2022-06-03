@@ -33,6 +33,10 @@ private:
 public:
 
 	WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES);
+
+	WasmContext(const WasmContext&) = delete;
+	WasmContext(WasmContext&&) = delete
+	WasmContext& operator=(const WasmContext&) = delete;
  
 	std::unique_ptr<WasmRuntime>
 	new_runtime_instance(Hash const& script_addr);
@@ -62,6 +66,10 @@ public:
 	WasmRuntime(ImplArgs&&... args)
 		: impl(new detail::Wasm3_WasmRuntime(std::move(args)...))
 		{}
+
+	WasmRuntime(const WasmRuntime&) = delete;
+	WasmRuntime(WasmRuntime&&) = delete;
+	WasmRuntime& operator=(const WasmRuntime&) = delete;
 	 
 	int32_t invoke(const char* method_name);
 
