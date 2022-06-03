@@ -50,11 +50,20 @@ WasmRuntime::get_memory() const
 	return impl->get_memory();
 }
 
-int32_t 
+template<typename ret>
+ret
 WasmRuntime::invoke(const char* method_name)
 {
-	return impl->invoke(method_name);
+	return impl->template invoke<ret>(method_name);
 }
+
+template
+void
+WasmRuntime::invoke<void>(const char* methodname);
+
+template
+int32_t
+WasmRuntime::invoke<int32_t>(const char* methodname);
 
 template<typename ret, typename... Args>
 void 

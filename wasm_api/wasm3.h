@@ -164,6 +164,11 @@ namespace wasm3 {
                 throw wasm_api::WasmError(err);
             }
         }
+        static inline void check_error_return(M3Result err) {
+            if (err != m3Err_none) {
+                throw wasm_api::WasmError(std::string(err) + ": mismatch occurred in fn return type");
+            }
+        }
     } // namespace detail
     /** @endcond */
 
@@ -386,7 +391,7 @@ namespace wasm3 {
             detail::check_error(res);
             Ret ret;
             res = m3_GetResults(m_func, 1, &ret);
-            detail::check_error(res);
+            detail::check_error_return(res);
             return ret;
         }
 
@@ -413,13 +418,13 @@ namespace wasm3 {
         Ret call(Args... args) {
             const void *arg_ptrs[] = { reinterpret_cast<const void*>(&args)... };
             M3Result res = m3_Call(m_func, sizeof...(args), arg_ptrs);
-            detail::check_error(res);
+            detail::check_error_return(res);
 
             if constexpr (!std::is_void<Ret>::value) {
                 Ret ret;
                 const void* ret_ptrs[] = { &ret };
                 res = m3_GetResults(m_func, 1, ret_ptrs);
-                detail::check_error(res);
+                detail::check_error_return(res);
                 return ret; 
             }
         }

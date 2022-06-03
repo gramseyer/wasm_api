@@ -65,7 +65,8 @@ public:
 		module->link_optional(module_name, fn_name, f);
 	}
 
-	int32_t 
+	template<typename ret>
+	ret 
 	invoke(const char* method_name);
 };
 

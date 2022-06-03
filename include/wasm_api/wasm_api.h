@@ -77,7 +77,8 @@ public:
 	WasmRuntime(WasmRuntime&&) = delete;
 	WasmRuntime& operator=(const WasmRuntime&) = delete;
 	 
-	int32_t invoke(const char* method_name);
+	template<typename ret>
+	ret invoke(const char* method_name);
 
 	template<auto f>
 	void link_fn(
@@ -86,6 +87,15 @@ public:
 	{
 		_link_fn(module, fn_name, f);
 	}
+
+/*
+	template<auto f>
+	void link_fn_void(
+		const char* module,
+		const char* fn_name)
+	{
+		_link_fn_void(module, fn_name, f);
+	} */
 
 	template<auto f>
 	void link_env(
