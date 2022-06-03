@@ -1,0 +1,7 @@
+Name: wasm_api
+Description: Wasm API
+Version: @PACKAGE_VERSION@
+
+Libs: ${pcfiledir}/libwasmapi.a
+Cflags: -I${pcfiledir}/include
+

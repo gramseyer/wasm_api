@@ -18,5 +18,5 @@ PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([Catch2], [Catch2])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile wasm_api.pc])
+AC_CONFIG_FILES([Makefile wasm_api.pc wasm_api-uninstalled.pc])
 AC_OUTPUT

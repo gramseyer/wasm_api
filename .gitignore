@@ -70,4 +70,4 @@ test.trs
 test-suite.log
 
 #generated
-wasm_api.pc
+*.pc
