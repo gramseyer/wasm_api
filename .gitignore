@@ -65,4 +65,4 @@ config.status
 install-sh
 
 #generated
-wasm_api.pc
+*.pc
