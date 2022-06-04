@@ -166,7 +166,7 @@ namespace wasm3 {
         }
         static inline void check_error_return(M3Result err) {
             if (err != m3Err_none) {
-                throw wasm_api::WasmError(std::string(err) + ": mismatch occurred in fn return type");
+                throw wasm_api::WasmError(std::string(err));// + ": mismatch occurred in fn return type");
             }
         }
     } // namespace detail
@@ -402,7 +402,7 @@ namespace wasm3 {
             /* std::enable_if above checks that all argument types are convertible const char* */
             const char* argv[] = {args...};
             M3Result res = m3_CallArgv(m_func, sizeof...(args), argv);
-            detail::check_error(res);
+            detail::check_error_return(res);
         }
 
         /**
