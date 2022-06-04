@@ -143,7 +143,7 @@ public:
 			throw HostError("OOB Mem Access");
 		}
 
-		memcpy(out.data(), mem, len);
+		std::memcpy(out.data(), mem + offset, len);
 		return out;
 	}
 
@@ -172,7 +172,7 @@ public:
 				+ std::to_string(max_len));
 		}
 
-		memcpy(mem + offset, array.data(), array.size());
+		std::memcpy(mem + offset, array.data(), array.size());
 	}
 
 	int32_t memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const;

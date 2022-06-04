@@ -32,7 +32,6 @@ TEST_CASE("memcpy", "[env]")
 	{
 		runtime -> safe_memcpy(0, 10, 4);
 		std::vector<uint8_t> cmp;
-		cmp.resize(4);
 
 		cmp = runtime -> template load_from_memory<decltype(cmp)>(0, 4);
 
@@ -52,6 +51,23 @@ TEST_CASE("memcpy", "[env]")
 	SECTION("small overlap memcpy src < dst")
 	{
 		REQUIRE_THROWS(runtime -> safe_memcpy(11, 10, 4));
+	}
+
+	SECTION("read from memory")
+	{
+		std::vector<uint8_t> cmp = runtime -> template load_from_memory<std::vector<uint8_t>>(10, 4);
+		REQUIRE(cmp == buf);
+	}
+	SECTION("read fixed size buf")
+	{
+		std::array<uint8_t, 4> arr;
+
+		arr = runtime -> template load_from_memory_to_const_size_buf<decltype(arr)>(10);
+
+		std::vector<uint8_t> cmp;
+		cmp.insert(cmp.end(), arr.begin(), arr.end());
+
+		REQUIRE(cmp == buf);
 	}
 }
 
