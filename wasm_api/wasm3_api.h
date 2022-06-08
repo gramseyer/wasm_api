@@ -30,7 +30,7 @@ public:
 		{}
 
 	std::unique_ptr<WasmRuntime> 
-	new_runtime_instance(Hash const& script_addr);
+	new_runtime_instance(Hash const& script_addr, const script_context_t& context);
 };
 
 class Wasm3_WasmRuntime {

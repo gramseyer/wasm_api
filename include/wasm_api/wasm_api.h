@@ -18,9 +18,10 @@ namespace detail
 } /* detail */
 
 typedef std::array<uint8_t, 32> Hash;
+typedef void* script_context_t;
 
 struct ScriptDB {
-	virtual const std::vector<uint8_t>* get_script(const Hash& h) const = 0;
+	virtual const std::vector<uint8_t>* get_script(const Hash& h, const script_context_t& context) const = 0;
 };
 
 class WasmRuntime;
@@ -39,7 +40,7 @@ public:
 	WasmContext& operator=(const WasmContext&) = delete;
  
 	std::unique_ptr<WasmRuntime>
-	new_runtime_instance(Hash const& script_addr);
+	new_runtime_instance(Hash const& script_addr, const script_context_t& context);
 
 	~WasmContext();
 };

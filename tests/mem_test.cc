@@ -22,7 +22,7 @@ TEST_CASE("memcpy", "[env]")
 	WasmContext ctx(scripts, 65536);
 
 
-	auto runtime = ctx.new_runtime_instance(h);
+	auto runtime = ctx.new_runtime_instance(h, nullptr);
 
 	std::vector<uint8_t> buf = {0x01, 0x02, 0x03, 0x04};
 

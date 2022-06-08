@@ -15,9 +15,9 @@ WasmContext::WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYT
 	{}
 
 std::unique_ptr<WasmRuntime>
-WasmContext::new_runtime_instance(Hash const& script_addr)
+WasmContext::new_runtime_instance(Hash const& script_addr, const script_context_t& context)
 {
-	return impl->new_runtime_instance(script_addr);
+	return impl->new_runtime_instance(script_addr, context);
 }
 
 WasmContext::~WasmContext()

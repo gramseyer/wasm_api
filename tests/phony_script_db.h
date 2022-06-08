@@ -16,7 +16,7 @@ class PhonyScriptDB : public wasm_api::ScriptDB
 
 public:
 
-	const std::vector<uint8_t>* get_script(const wasm_api::Hash& h) const override final
+	const std::vector<uint8_t>* get_script(const wasm_api::Hash& h,[[maybe_unused]] const wasm_api::script_context_t& context) const override final
 	{
 		return scripts.at(h).get();
 	}
