@@ -18,7 +18,7 @@ namespace detail
 } /* detail */
 
 typedef std::array<uint8_t, 32> Hash;
-typedef void* script_context_t;
+typedef const void* script_context_t;
 
 struct ScriptDB {
 	virtual const std::vector<uint8_t>* get_script(const Hash& h, const script_context_t& context) const = 0;
