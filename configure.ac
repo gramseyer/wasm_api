@@ -17,6 +17,10 @@ PKG_PROG_PKG_CONFIG
 
 PKG_CHECK_MODULES([Catch2], [Catch2])
 
+AC_C_BIGENDIAN
+AC_C_BIGENDIAN(IS_BIG_ENDIAN=1, IS_BIG_ENDIAN=0)
+AC_SUBST(IS_BIG_ENDIAN)
+
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile wasm_api.pc wasm_api-uninstalled.pc])
+AC_CONFIG_FILES([Makefile include/wasm_api/build_endian.h wasm_api.pc wasm_api-uninstalled.pc])
 AC_OUTPUT

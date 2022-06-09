@@ -2,6 +2,8 @@
 
 #include "wasm_api/error.h"
 
+#include "wasm_api/build_endian.h"
+
 #include <array>
 #include <cstring>
 #include <cstdint>
@@ -89,15 +91,6 @@ public:
 		_link_fn(module, fn_name, f);
 	}
 
-/*
-	template<auto f>
-	void link_fn_void(
-		const char* module,
-		const char* fn_name)
-	{
-		_link_fn_void(module, fn_name, f);
-	} */
-
 	template<auto f>
 	void link_env(
 		const char* fn_name)
@@ -106,43 +99,41 @@ public:
 	}
 
 	template<typename ArrayLike>
-	ArrayLike load_from_memory(int32_t offset, int32_t len)
+	ArrayLike load_from_memory(uint32_t offset, uint32_t len)
 	{
 		auto [mem, mlen] = get_memory();
 
-		if (offset < 0 || len < 0) {
-			throw HostError("Invalid Mem Parameters");
-		}
+		check_bounds(mlen, offset, len);
 
-		if (mlen < static_cast<uint32_t>(offset) + static_cast<uint32_t>(len)) {
-			// did you forget (memory 1 1) in the .wat file
+
+		return ArrayLike(mem + offset, mem + offset + len);
+	}
+
+	void
+	check_bounds(size_t mlen, size_t offset, size_t len)
+	{
+		if ((mlen < offset + len) 
+			|| (offset + len < offset)) //overflow
+		{
 			throw HostError(
-				std::string("OOB Mem Access: mlen = ")
+				"OOB Mem Access: mlen = " 
 				+ std::to_string(mlen) 
 				+ " offset = " 
 				+ std::to_string(offset) 
 				+ " len = " 
 				+ std::to_string(len));
 		}
-
-		return ArrayLike(mem + offset, mem + offset + len);
 	}
 
 	template <typename ArrayLike>
-	ArrayLike load_from_memory_to_const_size_buf(int32_t offset)
+	ArrayLike load_from_memory_to_const_size_buf(uint32_t offset)
 	{
 		ArrayLike out;
 		const size_t len = out.size();
 
 		auto [mem, mlen] = get_memory();
-		
-		if (offset < 0 || len < 0) {
-			throw HostError("Invalid Mem Parameters");
-		}
 
-		if (mlen < static_cast<uint32_t>(offset) + static_cast<uint32_t>(len)) {
-			throw HostError("OOB Mem Access");
-		}
+		check_bounds(mlen, offset, len);
 
 		std::memcpy(out.data(), mem + offset, len);
 		return out;
@@ -157,23 +148,24 @@ public:
 			throw HostError("Array is too big to write");
 		}
 
-		if (offset < 0 || max_len < 0) {
-			throw HostError("Invalid Mem Parameters");
-		}
-
 		auto [mem, mlen] = get_memory();
 
-		if (mlen < offset + array.size()) {
-			throw HostError(
-				"OOB Mem Write: mlen = " 
-				+ std::to_string(mlen) 
-				+ " offset = " 
-				+ std::to_string(offset) 
-				+ " max_len = " 
-				+ std::to_string(max_len));
-		}
+		check_bounds(mlen, offset, max_len);
 
 		std::memcpy(mem + offset, array.data(), array.size());
+	}
+
+	template<std::integral integer_type>
+	void
+	write_to_memory(integer_type const& value, uint32_t offset)
+	{
+		auto [mem, mlen] = get_memory();
+
+		check_bounds(mlen, offset, sizeof(integer_type));
+
+		static_assert(WASM_API_ENDIAN == 0, "invalid endianness");
+
+		std::memcpy(mem + offset, static_cast<const uint8_t*>(&value), sizeof(integer_type));
 	}
 
 	int32_t memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const;

@@ -1,0 +1,6 @@
+// -*- C++ -*-
+// Warning: Make sure to edit build_endian.h.in, not build_endian.h.
+
+/** \file build_endian.h Endianness of build machine. */
+
+#define WASM_API_ENDIAN @IS_BIG_ENDIAN@

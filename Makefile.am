@@ -34,6 +34,15 @@ TEST_WASMS = ${TEST_WATS:.wat=.wasm}
 
 lib_LIBRARIES = libwasmapi.a
 
+nodist_pkginclude_HEADERS = include/wasm_api/build_endian.h
+
+pkginclude_HEADERS = include/wasm_api/build_endian.h \
+	include/wasm_api/error.h \
+	include/wasm_api/wasm_api.h
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = wasm_api.pc
+
 libwasmapi_a_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS)
 
 $(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I./include
