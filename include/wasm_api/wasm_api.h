@@ -165,7 +165,7 @@ public:
 
 		static_assert(WASM_API_ENDIAN == 0, "invalid endianness");
 
-		std::memcpy(mem + offset, static_cast<const uint8_t*>(&value), sizeof(integer_type));
+		std::memcpy(mem + offset, reinterpret_cast<const uint8_t*>(&value), sizeof(integer_type));
 	}
 
 	int32_t memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const;
