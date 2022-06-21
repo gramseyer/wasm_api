@@ -109,7 +109,7 @@ LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t)
 LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
 LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
 
-LINK_DECL(uint32_t, int64_t, int64_t, uint32_t)
+LINK_DECL(uint32_t, int64_t, int64_t)
 
 int32_t 
 WasmRuntime::memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const
