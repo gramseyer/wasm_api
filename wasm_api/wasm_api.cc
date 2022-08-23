@@ -140,6 +140,10 @@ uint32_t
 WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
 {
 	auto [mem, mlen] = get_memory();
+
+	// implicity checks overflows for src+len and dst+len
+	detail::check_bounds(mlen, std::max(src, dst), len);
+
 	if (dst <= src && dst + len >= src) {
 		throw HostError("overlapping memcpy");
 	}
@@ -154,5 +158,26 @@ WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
 	std::memcpy(mem + dst, mem + src, len);
 	return dst;
 }
+
+namespace detail
+{
+
+void
+check_bounds(uint32_t mlen, uint32_t offset, uint32_t len)
+{
+	if ((mlen < offset + len) 
+		|| __builtin_add_overflow_p(offset, len, static_cast<uint32_t>(0)))  //offset + len < offset)) //overflow
+	{
+		throw HostError(
+			"OOB Mem Access: mlen = " 
+			+ std::to_string(mlen) 
+			+ " offset = " 
+			+ std::to_string(offset) 
+			+ " len = " 
+			+ std::to_string(len));
+	}
+}
+
+} /* detail */
 
 } /* wasm_api */

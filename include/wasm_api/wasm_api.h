@@ -15,8 +15,11 @@ namespace wasm_api
 
 namespace detail
 {
-	class Wasm3_WasmContext;
-	class Wasm3_WasmRuntime;
+class Wasm3_WasmContext;
+class Wasm3_WasmRuntime;
+
+void check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
+
 } /* detail */
 
 typedef std::array<uint8_t, 32> Hash;
@@ -103,26 +106,9 @@ public:
 	{
 		auto [mem, mlen] = get_memory();
 
-		check_bounds(mlen, offset, len);
-
+		detail::check_bounds(mlen, offset, len);
 
 		return ArrayLike(mem + offset, mem + offset + len);
-	}
-
-	void
-	check_bounds(size_t mlen, size_t offset, size_t len)
-	{
-		if ((mlen < offset + len) 
-			|| (offset + len < offset)) //overflow
-		{
-			throw HostError(
-				"OOB Mem Access: mlen = " 
-				+ std::to_string(mlen) 
-				+ " offset = " 
-				+ std::to_string(offset) 
-				+ " len = " 
-				+ std::to_string(len));
-		}
 	}
 
 	template <typename ArrayLike>
@@ -133,7 +119,7 @@ public:
 
 		auto [mem, mlen] = get_memory();
 
-		check_bounds(mlen, offset, len);
+		detail::check_bounds(mlen, offset, len);
 
 		std::memcpy(out.data(), mem + offset, len);
 		return out;
@@ -150,7 +136,7 @@ public:
 
 		auto [mem, mlen] = get_memory();
 
-		check_bounds(mlen, offset, max_len);
+		detail::check_bounds(mlen, offset, max_len);
 
 		std::memcpy(mem + offset, array.data(), array.size());
 	}
@@ -161,7 +147,7 @@ public:
 	{
 		auto [mem, mlen] = get_memory();
 
-		check_bounds(mlen, offset, sizeof(integer_type));
+		detail::check_bounds(mlen, offset, sizeof(integer_type));
 
 		static_assert(WASM_API_ENDIAN == 0, "invalid endianness");
 
