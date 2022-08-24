@@ -2,9 +2,8 @@
 
 #include "wasm_api/error.h"
 
-#include "wasm_api/build_endian.h"
-
 #include <array>
+#include <bit>
 #include <cstring>
 #include <cstdint>
 #include <memory>
@@ -149,7 +148,7 @@ public:
 
 		detail::check_bounds(mlen, offset, sizeof(integer_type));
 
-		static_assert(WASM_API_ENDIAN == 0, "invalid endianness");
+		static_assert(std::endian::native == std::endian::little);
 
 		std::memcpy(mem + offset, reinterpret_cast<const uint8_t*>(&value), sizeof(integer_type));
 	}

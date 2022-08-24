@@ -34,9 +34,7 @@ TEST_WASMS = ${TEST_WATS:.wat=.wasm}
 
 lib_LIBRARIES = libwasmapi.a
 
-nodist_pkginclude_HEADERS = include/wasm_api/build_endian.h
-
-pkginclude_HEADERS = include/wasm_api/build_endian.h \
+pkginclude_HEADERS = \
 	include/wasm_api/error.h \
 	include/wasm_api/wasm_api.h
 
@@ -57,6 +55,4 @@ check_PROGRAMS = test
 TESTS = test
 
 test_LDFLAGS = $(Catch2_LIBS)
-
-
 

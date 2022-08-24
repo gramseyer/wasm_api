@@ -166,7 +166,7 @@ void
 check_bounds(uint32_t mlen, uint32_t offset, uint32_t len)
 {
 	if ((mlen < offset + len) 
-		|| __builtin_add_overflow_p(offset, len, static_cast<uint32_t>(0)))  //offset + len < offset)) //overflow
+		|| __builtin_add_overflow_p(offset, len, static_cast<uint32_t>(0)))  //overflow
 	{
 		throw HostError(
 			"OOB Mem Access: mlen = " 
