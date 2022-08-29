@@ -23,7 +23,9 @@ Wasm3_WasmContext::new_runtime_instance(Hash const& script_addr, const script_co
 
 	runtime->load(*module);
 
-	return std::make_unique<WasmRuntime>(std::move(runtime), std::move(module));
+	WasmRuntime* out = new WasmRuntime(new Wasm3_WasmRuntime(std::move(runtime), std::move(module)));
+
+	return std::unique_ptr<WasmRuntime>(out);
 }
 
 template<typename ret>

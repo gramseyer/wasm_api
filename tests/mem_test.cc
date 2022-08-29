@@ -5,7 +5,6 @@
 #include "tests/phony_script_db.h"
 #include "tests/load_wasm.h"
 
-
 namespace wasm_api
 {
 

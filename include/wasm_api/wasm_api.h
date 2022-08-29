@@ -76,12 +76,12 @@ class WasmRuntime {
 	WasmRuntime& operator=(const WasmRuntime&) = delete;
 	WasmRuntime& operator=(WasmRuntime&&) = delete;
 
-public:
+	//takes ownership of impl
+	WasmRuntime(detail::Wasm3_WasmRuntime* impl);
 
-	template<typename... ImplArgs>
-	WasmRuntime(ImplArgs&&... args)
-		: impl(new detail::Wasm3_WasmRuntime(std::move(args)...))
-		{}
+	void _write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t len);
+
+public:
 	 
 	template<typename ret>
 	ret invoke(const char* method_name);
@@ -128,30 +128,21 @@ public:
 	template<typename ArrayLike>
 	void write_to_memory(ArrayLike const& array, uint32_t offset, uint32_t max_len)
 	{
-
 		if (array.size() > max_len)
 		{
 			throw HostError("Array is too big to write");
 		}
 
-		auto [mem, mlen] = get_memory();
-
-		detail::check_bounds(mlen, offset, max_len);
-
-		std::memcpy(mem + offset, array.data(), array.size());
+		_write_to_memory(array.data(), offset, array.size());
 	}
 
 	template<std::integral integer_type>
 	void
 	write_to_memory(integer_type const& value, uint32_t offset)
 	{
-		auto [mem, mlen] = get_memory();
-
-		detail::check_bounds(mlen, offset, sizeof(integer_type));
-
 		static_assert(std::endian::native == std::endian::little);
 
-		std::memcpy(mem + offset, reinterpret_cast<const uint8_t*>(&value), sizeof(integer_type));
+		_write_to_memory(reinterpret_cast<const uint8_t*>(&value), offset, sizeof(integer_type));
 	}
 
 	int32_t memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const;

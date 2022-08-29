@@ -26,6 +26,11 @@ WasmContext::~WasmContext()
     impl = nullptr;
 }
 
+WasmRuntime::WasmRuntime(detail::Wasm3_WasmRuntime* impl)
+		: impl(impl)
+		{}
+
+
 WasmRuntime::~WasmRuntime()
 {
     if (impl)
@@ -146,6 +151,16 @@ WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
 
     std::memcpy(mem + dst, mem + src, len);
     return dst;
+}
+
+void 
+WasmRuntime::_write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t len)
+{
+	auto [mem, mlen] = get_memory();
+
+	detail::check_bounds(mlen, offset, len);
+
+	std::memcpy(mem + offset, src_ptr, len);
 }
 
 namespace detail
