@@ -20,4 +20,9 @@ struct WasmError : public HostError
 	using HostError::HostError;
 };
 
+struct UnrecoverableSystemError : public std::runtime_error
+{
+	using std::runtime_error::runtime_error;
+};
+
 } /* wasm_api */

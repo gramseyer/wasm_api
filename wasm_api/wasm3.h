@@ -106,12 +106,13 @@ namespace wasm3 {
                 } catch(std::runtime_error& e)
                 {
                     std::printf("cannot recover from other errors safely: what %s", e.what());
-                    exit(1);
+                    m3ApiTrap(m3Err_unrecoverableSystemError);
                 } catch(...)
                 {
                     std::printf("unknown error type, cannot recover");
-                    exit(1);
+                    m3ApiTrap(m3Err_unrecoverableSystemError);
                 }
+                // wasm3 version of this file does not have an m3ApiSuccess here, so presumably not needed
             }
         };
 
@@ -124,6 +125,7 @@ namespace wasm3 {
                 Func* function = reinterpret_cast<Func*>(_ctx->userdata);
                 try {
                     std::apply(function, args);
+                    m3ApiSuccess();
                 } catch (wasm_api::HostError& e)
                 {
                     std::printf("host env error: %s\n", e.what());
@@ -131,9 +133,11 @@ namespace wasm3 {
                 } catch(std::runtime_error& e)
                 {
                     std::printf("cannot recover from other errors safely: what %s", e.what());
-                    exit(1);
+                    m3ApiTrap(m3Err_unrecoverableSystemError);
+                } catch(...) {
+                    std::printf("unknown error type, cannot recover\n");
+                    m3ApiTrap(m3Err_unrecoverableSystemError);
                 }
-                m3ApiSuccess();
             }
         };
 
@@ -161,12 +165,20 @@ namespace wasm3 {
     namespace detail {
         static inline void check_error(M3Result err) {
             if (err != m3Err_none) {
+                if (err == m3Err_unrecoverableSystemError)
+                {
+                    throw wasm_api::UnrecoverableSystemError(err);
+                }
                 throw wasm_api::WasmError(err);
             }
         }
         static inline void check_error_return(M3Result err) {
             if (err != m3Err_none) {
-                throw wasm_api::WasmError(std::string(err));// + ": mismatch occurred in fn return type");
+                if (err == m3Err_unrecoverableSystemError)
+                {
+                    throw wasm_api::UnrecoverableSystemError(err);
+                }
+                throw wasm_api::WasmError(std::string(err));
             }
         }
     } // namespace detail

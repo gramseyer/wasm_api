@@ -27,7 +27,8 @@ public:
 	}
 };
 
-wasm_api::Hash make_hash(uint8_t idx)
+wasm_api::Hash 
+static make_hash(uint8_t idx)
 {
 	wasm_api::Hash h;
 	h[0] = idx;

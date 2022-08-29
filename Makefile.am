@@ -22,7 +22,8 @@ WASM_API_SRCS = \
 
 TEST_SRCS = \
 	tests/wasm3_test.cc \
-	tests/mem_test.cc
+	tests/mem_test.cc \
+	tests/wasm_api_test.cc
 
 TEST_WATS = \
 	$(wildcard tests/wat/*.wat)
