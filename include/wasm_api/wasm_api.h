@@ -32,16 +32,16 @@ class WasmRuntime;
 
 class WasmContext {
 
-private:
 	detail::Wasm3_WasmContext* impl;
-
-public:
-
-	WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES);
 
 	WasmContext(const WasmContext&) = delete;
 	WasmContext(WasmContext&&) = delete;
 	WasmContext& operator=(const WasmContext&) = delete;
+	WasmContext& operator=(WasmContext&&) = delete;
+
+public:
+
+	WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES);
  
 	std::unique_ptr<WasmRuntime>
 	new_runtime_instance(Hash const& script_addr, const script_context_t& context);
@@ -71,16 +71,17 @@ class WasmRuntime {
 		const char* fn_name,
 		void (*f)(Args...));
 
+	WasmRuntime(const WasmRuntime&) = delete;
+	WasmRuntime(WasmRuntime&&) = delete;
+	WasmRuntime& operator=(const WasmRuntime&) = delete;
+	WasmRuntime& operator=(WasmRuntime&&) = delete;
+
 public:
 
 	template<typename... ImplArgs>
 	WasmRuntime(ImplArgs&&... args)
 		: impl(new detail::Wasm3_WasmRuntime(std::move(args)...))
 		{}
-
-	WasmRuntime(const WasmRuntime&) = delete;
-	WasmRuntime(WasmRuntime&&) = delete;
-	WasmRuntime& operator=(const WasmRuntime&) = delete;
 	 
 	template<typename ret>
 	ret invoke(const char* method_name);
