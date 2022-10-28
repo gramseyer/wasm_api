@@ -98,6 +98,7 @@ LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t)
 LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
 LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
 
+LINK_DECL(uint32_t, int64_t)
 LINK_DECL(uint32_t, int64_t, int64_t)
 
 
