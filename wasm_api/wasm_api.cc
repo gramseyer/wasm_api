@@ -108,7 +108,11 @@ LINK_DECL(uint32_t, uint32_t, uint64_t)
 template void WasmRuntime::_link_fn<uint32_t>(                
     const char* module, const char* fn_name, uint32_t (*f)(void));  
 template void WasmRuntime::_link_fn<int32_t>(                 
-    const char* module, const char* fn_name, int32_t (*f)(void));   
+    const char* module, const char* fn_name, int32_t (*f)(void)); 
+template void WasmRuntime::_link_fn<uint64_t>(                
+    const char* module, const char* fn_name, uint64_t (*f)(void));  
+template void WasmRuntime::_link_fn<int64_t>(                 
+    const char* module, const char* fn_name, int64_t (*f)(void));     
 template void WasmRuntime::_link_fn<>(                          
     const char* module, const char* fn_name, void (*f)(void));
 
