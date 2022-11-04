@@ -19,6 +19,14 @@ class Wasm3_WasmRuntime;
 
 void check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
 
+template<typename T>
+concept VectorLike
+= requires (const T object)
+{
+	object.data();
+	object.size();
+};
+
 } /* detail */
 
 typedef std::array<uint8_t, 32> Hash;
@@ -125,8 +133,8 @@ public:
 		return out;
 	}
 
-	template<typename ArrayLike>
-	void write_to_memory(ArrayLike const& array, uint32_t offset, uint32_t max_len)
+	template<detail::VectorLike V>
+	void write_to_memory(V const& array, uint32_t offset, uint32_t max_len)
 	{
 		if (array.size() > max_len)
 		{
@@ -134,6 +142,23 @@ public:
 		}
 
 		_write_to_memory(array.data(), offset, array.size());
+	}
+
+	template<detail::VectorLike V>
+	void 
+	write_slice_to_memory(V const& array, uint32_t offset, uint32_t slice_start, uint32_t slice_end)
+	{
+		if (slice_start > slice_end)
+		{
+			throw HostError("invalid slice params");
+		}
+
+		if (slice_end > array.size())
+		{
+			throw HostError("array too short");
+		}
+
+		_write_to_memory(array.data() + slice_start, offset, (slice_end - slice_start));
 	}
 
 	template<std::integral integer_type>
