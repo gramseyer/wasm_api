@@ -103,6 +103,7 @@ LINK_DECL(uint32_t, int64_t, int64_t)
 
 LINK_DECL(uint32_t, uint64_t)
 LINK_DECL(uint32_t, uint32_t, uint64_t)
+LINK_DECL(uint32_t, uint64_t, uint32_t)
 
 
 template void WasmRuntime::_link_fn<uint32_t>(                
