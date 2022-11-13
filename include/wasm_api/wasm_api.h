@@ -110,9 +110,9 @@ public:
 	}
 
 	template<typename ArrayLike>
-	ArrayLike load_from_memory(uint32_t offset, uint32_t len)
+	ArrayLike load_from_memory(uint32_t offset, uint32_t len) const
 	{
-		auto [mem, mlen] = get_memory();
+		auto const [mem, mlen] = get_memory();
 
 		detail::check_bounds(mlen, offset, len);
 
@@ -120,12 +120,12 @@ public:
 	}
 
 	template <typename ArrayLike>
-	ArrayLike load_from_memory_to_const_size_buf(uint32_t offset)
+	ArrayLike load_from_memory_to_const_size_buf(uint32_t offset) const
 	{
 		ArrayLike out;
 		const size_t len = out.size();
 
-		auto [mem, mlen] = get_memory();
+		auto const [mem, mlen] = get_memory();
 
 		detail::check_bounds(mlen, offset, len);
 
