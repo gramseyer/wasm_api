@@ -46,6 +46,8 @@ libwasmapi_a_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS)
 
 $(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I./include
 
+$(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
+
 test_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS) $(TEST_SRCS) test.cc
 
 $(TEST_SRCS:.cc=.o): CXXFLAGS += $(Catch2_CFLAGS) -I./include

@@ -88,6 +88,10 @@ WasmRuntime::_link_fn(const char* module,
         const char* module, const char* fn_name, uint32_t (*f)(__VA_ARGS__));  \
     template void WasmRuntime::_link_fn<int32_t, __VA_ARGS__>(                 \
         const char* module, const char* fn_name, int32_t (*f)(__VA_ARGS__));   \
+    template void WasmRuntime::_link_fn<uint64_t, __VA_ARGS__>(                \
+        const char* module, const char* fn_name, uint64_t (*f)(__VA_ARGS__));  \
+    template void WasmRuntime::_link_fn<int64_t, __VA_ARGS__>(                 \
+        const char* module, const char* fn_name, int64_t (*f)(__VA_ARGS__));   \
     template void WasmRuntime::_link_fn<__VA_ARGS__>(                          \
         const char* module, const char* fn_name, void (*f)(__VA_ARGS__));
 

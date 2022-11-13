@@ -9,6 +9,8 @@ AC_LANG(C++)
 
 AC_PROG_RANLIB
 
+CFLAGS="-O3"
+
 AX_APPEND_COMPILE_FLAGS([-pthread])
 AX_APPEND_COMPILE_FLAGS([-std=gnu++2a])
 AS_IF([test -z "${WFLAGS+set}"], AX_APPEND_COMPILE_FLAGS([-Wall], WFLAGS))
