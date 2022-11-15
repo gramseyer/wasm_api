@@ -176,6 +176,8 @@ public:
 
 	uint32_t safe_memcpy(uint32_t dst, uint32_t src, uint32_t len);
 
+	uint32_t safe_strlen(uint32_t start, uint32_t max_len) const;
+
 	~WasmRuntime();
 };
 

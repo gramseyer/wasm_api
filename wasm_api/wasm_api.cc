@@ -2,6 +2,8 @@
 
 #include "wasm_api/wasm3_api.h"
 
+#include <string.h>
+
 namespace wasm_api
 {
 
@@ -169,6 +171,19 @@ WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
     std::memcpy(mem + dst, mem + src, len);
     return dst;
 }
+
+uint32_t
+WasmRuntime::safe_strlen(uint32_t start, uint32_t max_len) const
+{
+    auto [mem, mlen] = get_memory();
+
+    if (start > mlen) {
+        return 0;
+    }
+
+    return strnlen(reinterpret_cast<const char*>(mem + start), std::min(max_len, mlen - start));
+}
+
 
 void 
 WasmRuntime::_write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t len)
