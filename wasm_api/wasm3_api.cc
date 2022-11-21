@@ -10,14 +10,14 @@ namespace detail
 std::unique_ptr<WasmRuntime> 
 Wasm3_WasmContext::new_runtime_instance(Hash const& script_addr, const script_context_t& context)
 {
-	auto const* contract = script_db.get_script(script_addr, context);
+	auto contract = script_db.get_script(script_addr, context);
 
-	if (contract == nullptr)
+	if (contract.data == nullptr)
 	{
 		return nullptr;
 	}
 
-	auto module = env.parse_module(contract->data(), contract->size());
+	auto module = env.parse_module(contract.data, contract.len);
 
 	auto runtime = env.new_runtime(MAX_STACK_BYTES);
 

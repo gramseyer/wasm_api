@@ -32,8 +32,16 @@ concept VectorLike
 typedef std::array<uint8_t, 32> Hash;
 typedef const void* script_context_t;
 
+struct Script
+{
+	uint8_t const* data;
+	uint32_t len;
+};
+
+constexpr static Script null_script = Script { .data = nullptr, .len = 0 };
+
 struct ScriptDB {
-	virtual const std::vector<uint8_t>* get_script(const Hash& h, const script_context_t& context) const = 0;
+	virtual Script get_script(const Hash& h, const script_context_t& context) const = 0;
 };
 
 class WasmRuntime;
