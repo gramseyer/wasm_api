@@ -9,7 +9,7 @@ AC_LANG(C++)
 
 AC_PROG_RANLIB
 
-CFLAGS="-O3"
+CFLAGS="-O3 -fPIC"
 
 AX_APPEND_COMPILE_FLAGS([-pthread])
 AX_APPEND_COMPILE_FLAGS([-std=gnu++2a])
@@ -17,7 +17,7 @@ AS_IF([test -z "${WFLAGS+set}"], AX_APPEND_COMPILE_FLAGS([-Wall], WFLAGS))
 
 PKG_PROG_PKG_CONFIG
 
-PKG_CHECK_MODULES([Catch2], [Catch2])
+PKG_CHECK_MODULES([Catch2], [catch2])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile wasm_api.pc wasm_api-uninstalled.pc])
