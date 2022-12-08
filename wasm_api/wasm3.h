@@ -101,7 +101,6 @@ namespace wasm3 {
                 } 
                 catch (wasm_api::HostError& e)
                 {
-                    std::printf("host env error: %s\n", e.what());
                     m3ApiTrap(m3Err_trapHostEnvError);
                 } catch(std::runtime_error& e)
                 {
@@ -128,7 +127,6 @@ namespace wasm3 {
                     m3ApiSuccess();
                 } catch (wasm_api::HostError& e)
                 {
-                    std::printf("host env error: %s\n", e.what());
                     m3ApiTrap(m3Err_trapHostEnvError);
                 } catch(std::runtime_error& e)
                 {
