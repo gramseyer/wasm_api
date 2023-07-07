@@ -20,6 +20,8 @@
 
 #include "tests/load_wasm.h"
 
+#include <cstring>
+
 using namespace wasm_api;
 using namespace test;
 

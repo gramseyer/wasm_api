@@ -18,11 +18,13 @@
 
 #include <cstdio>
 
+#include "wasm_api/wasm_api.h"
+
 namespace test
 {
 
 [[maybe_unused]]
-static std::unique_ptr<std::vector<uint8_t>> 
+static std::unique_ptr<wasm_api::Script> 
 load_wasm_from_file(const char* filename)
 {
 	FILE* f = std::fopen(filename, "r");
@@ -30,8 +32,9 @@ load_wasm_from_file(const char* filename)
 	if (f == nullptr) {
 		throw std::runtime_error("failed to load wasm file");
 	}
-
-	std::unique_ptr<std::vector<uint8_t>> contents = std::make_unique<std::vector<uint8_t>>();
+	
+	std::vector<uint8_t> contents;
+	//std::unique_ptr<std::vector<uint8_t>> contents = std::make_unique<std::vector<uint8_t>>();
 
 	const int BUF_SIZE = 65536;
 	char buf[BUF_SIZE];
@@ -40,12 +43,18 @@ load_wasm_from_file(const char* filename)
 	while (count != 0) {
 		count = std::fread(buf, sizeof(char), BUF_SIZE, f);
 		if (count > 0) {
-			contents->insert(contents->end(), buf, buf+count);
+			contents.insert(contents.end(), buf, buf+count);
 		}
 	}
 	std::fclose(f);
 
-	return contents;
+	std::unique_ptr<wasm_api::Script> script = std::make_unique<wasm_api::Script>();
+	script->data = new unsigned char[contents.size()];
+	script->len = contents.size();
+
+	std::memcpy(script->data, contents.data(), contents.size());
+
+	return script;
 }
 
 } /* test */
