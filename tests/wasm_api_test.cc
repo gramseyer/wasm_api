@@ -60,7 +60,7 @@ TEST_CASE("call external", "[wasm_api]")
 
     auto h = make_hash(0);
     auto c = load_wasm_from_file("tests/wat/test_error_handling.wasm");
-    scripts.add_script(h, c);
+    scripts.add_script(h, std::move(c));
 
     WasmContext ctx(scripts, 65536);
 
