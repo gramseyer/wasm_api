@@ -35,7 +35,7 @@ public:
 	wasm_api::Script get_script(const wasm_api::Hash& h,[[maybe_unused]] const wasm_api::script_context_t& context) const override final
 	{
 		auto const& ptr = *scripts.at(h).get();
-		return {ptr.data(), ptr.size()};
+		return {ptr.data(), static_cast<uint32_t>(ptr.size())};
 	}
 
 	void add_script(const wasm_api::Hash& h, std::unique_ptr<std::vector<uint8_t>>&& script)

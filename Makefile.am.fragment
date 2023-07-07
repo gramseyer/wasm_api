@@ -30,5 +30,5 @@ WASM_API_TEST_CCS = \
 
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
 $(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/
-
+$(WASM_API_TEST_CCS:.cc=.o) : CXXFLAGS += -I %reldir%/
 

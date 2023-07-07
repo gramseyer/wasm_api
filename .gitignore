@@ -71,3 +71,6 @@ test-suite.log
 
 #generated
 *.pc
+
+#mac nonsense
+*.dSYM

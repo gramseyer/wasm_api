@@ -20,6 +20,12 @@
 
 #include "wasm_api/wasm_api.h"
 
+#include "config.h"
+
+#ifndef TESTS_RELDIR
+#define TESTS_RELDIR 
+#endif
+
 namespace test
 {
 
@@ -27,13 +33,14 @@ namespace test
 static std::unique_ptr<std::vector<uint8_t>> 
 load_wasm_from_file(const char* filename)
 {
-	FILE* f = std::fopen(filename, "r");
+	std::string base(TESTS_RELDIR);
+	base += filename;
+	FILE* f = std::fopen(base.c_str(), "r");
 
 	if (f == nullptr) {
 		throw std::runtime_error("failed to load wasm file");
 	}
 	
-//	std::vector<uint8_t> contents;
 	std::unique_ptr<std::vector<uint8_t>> contents = std::make_unique<std::vector<uint8_t>>();
 
 	const int BUF_SIZE = 65536;
@@ -48,13 +55,6 @@ load_wasm_from_file(const char* filename)
 	}
 	std::fclose(f);
 
-//	std::unique_ptr<wasm_api::Script> script = std::make_unique<wasm_api::Script>();
-//	script->data = new unsigned char[contents.size()];
-//	script->len = contents.size();
-
-//	std::memcpy(script->data, contents.data(), contents.size());
-
-//	return script;
 	return contents;
 }
 
