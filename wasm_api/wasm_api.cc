@@ -25,16 +25,18 @@
 namespace wasm_api
 {
 
-WasmContext::WasmContext(const ScriptDB& script_db,
+WasmContext::WasmContext(
                          const uint32_t MAX_STACK_BYTES)
-    : impl(new detail::Wasm3_WasmContext(script_db, MAX_STACK_BYTES))
+    : impl(new detail::Wasm3_WasmContext(MAX_STACK_BYTES))
 {}
 
 std::unique_ptr<WasmRuntime>
-WasmContext::new_runtime_instance(Hash const& script_addr,
-                                  const script_context_t& context)
+WasmContext::new_runtime_instance(Script const& contract)
 {
-    return impl->new_runtime_instance(script_addr, context);
+    if (contract.data == nullptr) {
+        return nullptr;
+    }
+    return impl->new_runtime_instance(contract);
 }
 
 WasmContext::~WasmContext()

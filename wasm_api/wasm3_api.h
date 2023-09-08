@@ -33,21 +33,18 @@ class Wasm3_WasmContext {
 
 	wasm3::environment env;
 
-	ScriptDB const& script_db;
-
 	const uint32_t MAX_STACK_BYTES;
 
 public:
 	using runtime_t = Wasm3_WasmRuntime;
 
-	Wasm3_WasmContext(ScriptDB const& db, uint32_t MAX_STACK_BYTES)
+	Wasm3_WasmContext(uint32_t MAX_STACK_BYTES)
 		: env()
-		, script_db(db)
 		, MAX_STACK_BYTES(MAX_STACK_BYTES)
 		{}
 
 	std::unique_ptr<WasmRuntime> 
-	new_runtime_instance(Hash const& script_addr, const script_context_t& context);
+	new_runtime_instance(Script const& contract);
 };
 
 class Wasm3_WasmRuntime {

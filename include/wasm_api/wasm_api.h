@@ -58,9 +58,9 @@ struct Script
 
 constexpr static Script null_script = Script { .data = nullptr, .len = 0 };
 
-struct ScriptDB {
-	virtual Script get_script(const Hash& h, const script_context_t& context) const = 0;
-};
+//struct ScriptDB {
+//	virtual Script get_script(const Hash& h, const script_context_t& context) const = 0;
+//};
 
 class WasmRuntime;
 
@@ -75,10 +75,10 @@ class WasmContext {
 
 public:
 
-	WasmContext(const ScriptDB& script_db, const uint32_t MAX_STACK_BYTES);
+	WasmContext(const uint32_t MAX_STACK_BYTES);
  
 	std::unique_ptr<WasmRuntime>
-	new_runtime_instance(Hash const& script_addr, const script_context_t& context);
+	new_runtime_instance(Script const& script);//Hash const& script_addr, const script_context_t& context);
 
 	~WasmContext();
 };
