@@ -25,10 +25,10 @@
 using namespace wasm_api;
 using namespace test;
 
-TEST_CASE("call simple", "[wasm3]")
+TEST_CASE("call simple", "[wasm3][wasm_api]")
 {
 	wasm3::environment e;
-	
+
 	auto c = load_wasm_from_file("tests/wat/test_call_simple.wasm");
 
 	auto m = e.parse_module(c->data(), c->size());
@@ -44,7 +44,7 @@ TEST_CASE("call simple", "[wasm3]")
 }
 
 
-TEST_CASE("set memory", "[wasm3]")
+TEST_CASE("set memory", "[wasm3][wasm_api]")
 {
 	wasm3::environment e;
 	auto c = load_wasm_from_file("tests/wat/test_set_memory.wasm");

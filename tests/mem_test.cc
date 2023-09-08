@@ -18,7 +18,6 @@
 
 #include "wasm_api/wasm_api.h"
 
-#include "tests/phony_script_db.h"
 #include "tests/load_wasm.h"
 
 namespace wasm_api
@@ -26,18 +25,15 @@ namespace wasm_api
 
 using namespace test;
 
-TEST_CASE("memcpy", "[env]")
+TEST_CASE("memcpy", "[env][wasm_api]")
 {
-	PhonyScriptDB scripts;
-
-	auto h = make_hash(0);
 	auto c = load_wasm_from_file("tests/wat/test_set_memory.wasm");
-	scripts.add_script(h, std::move(c));
 
-	WasmContext ctx(scripts, 65536);
+	WasmContext ctx (65536);
 
+	Script s {.data = c -> data(), .len = c -> size() };
 
-	auto runtime = ctx.new_runtime_instance(h, nullptr);
+	auto runtime = ctx.new_runtime_instance(s);
 
 	std::vector<uint8_t> buf = {0x01, 0x02, 0x03, 0x04};
 

@@ -41,7 +41,8 @@ public:
 	Wasm3_WasmContext(uint32_t MAX_STACK_BYTES)
 		: env()
 		, MAX_STACK_BYTES(MAX_STACK_BYTES)
-		{}
+		{
+		}
 
 	std::unique_ptr<WasmRuntime> 
 	new_runtime_instance(Script const& contract);

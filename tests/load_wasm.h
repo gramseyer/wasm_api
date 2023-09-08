@@ -22,8 +22,8 @@
 
 #include "config.h"
 
-#ifndef TESTS_RELDIR
-#define TESTS_RELDIR 
+#ifndef WASMAPI_TESTS_RELDIR
+#define WASMAPI_TESTS_RELDIR 
 #endif
 
 namespace test
@@ -33,12 +33,14 @@ namespace test
 static std::unique_ptr<std::vector<uint8_t>> 
 load_wasm_from_file(const char* filename)
 {
-	std::string base(TESTS_RELDIR);
+	std::string base(WASMAPI_TESTS_RELDIR);
 	base += filename;
 	FILE* f = std::fopen(base.c_str(), "r");
 
 	if (f == nullptr) {
-		throw std::runtime_error("failed to load wasm file");
+		std::printf("failed to load file %s\n", base.c_str());
+		std::fflush(stdout);
+		throw std::runtime_error("failed to load wasm file: " + base);
 	}
 	
 	std::unique_ptr<std::vector<uint8_t>> contents = std::make_unique<std::vector<uint8_t>>();

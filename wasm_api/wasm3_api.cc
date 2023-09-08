@@ -28,16 +28,10 @@ namespace detail
 std::unique_ptr<WasmRuntime> 
 Wasm3_WasmContext::new_runtime_instance(Script const& contract)
 {
-	if (constract.data == nullptr)
+	if (contract.data == nullptr)
 	{
 		throw UnrecoverableSystemError("invalid nullptr passed to wasm3_wasmcontext");
 	}
-/*	auto contract = script_db.get_script(script_addr, context);
-
-	if (contract.data == nullptr)
-	{
-		return nullptr;
-	} */
 
 	auto module = env.parse_module(contract.data, contract.len);
 

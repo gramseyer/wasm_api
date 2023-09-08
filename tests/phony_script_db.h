@@ -26,13 +26,13 @@
 namespace test
 {
 
-class PhonyScriptDB : public wasm_api::ScriptDB
+class PhonyScriptDB
 {
 	std::map<wasm_api::Hash, std::unique_ptr<std::vector<uint8_t>>> scripts;
 
 public:
 
-	wasm_api::Script get_script(const wasm_api::Hash& h,[[maybe_unused]] const wasm_api::script_context_t& context) const override final
+	wasm_api::Script get_script(const wasm_api::Hash& h,[[maybe_unused]] const wasm_api::script_context_t& context) const
 	{
 		auto const& ptr = *scripts.at(h).get();
 		return {ptr.data(), static_cast<uint32_t>(ptr.size())};

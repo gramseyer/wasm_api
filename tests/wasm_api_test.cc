@@ -19,7 +19,6 @@
 #include "wasm_api/wasm_api.h"
 
 #include "tests/load_wasm.h"
-#include "tests/phony_script_db.h"
 
 using namespace wasm_api;
 using namespace test;
@@ -56,15 +55,13 @@ reentrance()
 
 TEST_CASE("call external", "[wasm_api]")
 {
-    PhonyScriptDB scripts;
-
-    auto h = make_hash(0);
     auto c = load_wasm_from_file("tests/wat/test_error_handling.wasm");
-    scripts.add_script(h, std::move(c));
 
-    WasmContext ctx(scripts, 65536);
+    Script s {.data = c->data(), .len = c->size()};
 
-    auto runtime = ctx.new_runtime_instance(h, nullptr);
+    WasmContext ctx(65536);
+
+    auto runtime = ctx.new_runtime_instance(s);
 
     runtime->template link_fn<&good_call>("test", "good_call");
 
@@ -117,3 +114,11 @@ TEST_CASE("call external", "[wasm_api]")
                           wasm_api::HostError);
     }
 }
+
+TEST_CASE("null handling", "[wasm_api]")
+{
+    WasmContext ctx(65535);
+
+    REQUIRE(ctx.new_runtime_instance(null_script) == nullptr);
+}
+

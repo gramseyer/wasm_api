@@ -48,7 +48,6 @@ concept VectorLike
 } /* detail */
 
 typedef std::array<uint8_t, 32> Hash;
-typedef const void* script_context_t;
 
 struct Script
 {
