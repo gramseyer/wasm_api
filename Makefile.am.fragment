@@ -32,3 +32,10 @@ $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
 $(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/
 $(WASM_API_TEST_CCS:.cc=.o) : CXXFLAGS += -I %reldir%/
 
+WASM_API_TEST_WATS = \
+	%reldir%/tests/wat/test_call_simple.wat \
+	%reldir%/tests/wat/test_error_handling.wat \
+	%reldir%/tests/wat/test_set_memory.wat
+
+WASM_API_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
+
