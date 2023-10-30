@@ -23,7 +23,7 @@
 #include "config.h"
 
 #ifndef WASMAPI_TESTS_RELDIR
-#define WASMAPI_TESTS_RELDIR 
+#define WASMAPI_TESTS_RELDIR "" 
 #endif
 
 namespace test

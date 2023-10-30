@@ -32,7 +32,9 @@ libwasmapi_a_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS)
 
 test_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS) $(WASM_API_TEST_CCS) test.cc
 
-$(WASM_API_TEST_CCS:.cc=.o): CXXFLAGS += $(Catch2_CFLAGS) -I./include
+$(WASM_API_TEST_CCS:.cc=.o): CXXFLAGS += $(Catch2_CFLAGS)  -I./include
+$(WASM_API_SRCS:.cc=.o): CXXFLAGS += $(wasm_api_CFLAGS)
+
 test.o : CXXFLAGS += $(Catch2_CFLAGS)
 test.o: $(WASM_API_TEST_WASMS)
 
