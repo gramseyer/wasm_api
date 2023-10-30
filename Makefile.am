@@ -41,5 +41,7 @@ test.o: $(WASM_API_TEST_WASMS)
 check_PROGRAMS = test
 TESTS = test
 
-test_LDFLAGS = $(Catch2_LIBS)
+# LDADD = $(Catch2_LIBS)
+
+test_LDADD = $(Catch2_LIBS)
 
