@@ -49,6 +49,7 @@ concept VectorLike
 
 typedef std::array<uint8_t, 32> Hash;
 
+/* Does not own the underlying memory */
 struct Script
 {
 	uint8_t const* data;
@@ -56,10 +57,6 @@ struct Script
 };
 
 constexpr static Script null_script = Script { .data = nullptr, .len = 0 };
-
-//struct ScriptDB {
-//	virtual Script get_script(const Hash& h, const script_context_t& context) const = 0;
-//};
 
 class WasmRuntime;
 
