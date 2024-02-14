@@ -174,16 +174,16 @@ WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
     // implicity checks overflows for src+len and dst+len
     detail::check_bounds(mlen, std::max(src, dst), len);
 
-    if (dst <= src && dst + len >= src)
+    if (dst <= src && dst + len > src)
     {
         throw HostError("overlapping memcpy");
     }
-    if (src <= dst && src + len >= dst)
+    if (src <= dst && src + len > dst)
     {
         throw HostError("overlapping memcpy");
     }
 
-    if (src + len >= mlen || dst + len >= mlen)
+    if (src + len > mlen || dst + len > mlen)
     {
         throw HostError("OOB memcpy");
     }
