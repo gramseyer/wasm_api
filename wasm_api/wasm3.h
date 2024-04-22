@@ -367,8 +367,10 @@ namespace wasm3 {
          * @param function_name  Name of the function (as referenced by the module)
          * @param function  Function to link (a function pointer)
          */
-        template<typename Func>
-        void link(const char *module, const char *function_name, Func *function);
+        template<typename ret, typename...Args>
+        void link(const char *module, const char *function_name, ret (*function)(void*, Args...));
+        template<typename...Args>
+        void link(const char *module, const char *function_name, void (*function)(void*, Args...));
 
         /**
          * Same as module::link, but doesn't throw an exception if the function is not referenced.
@@ -560,8 +562,15 @@ namespace wasm3 {
         return std::make_pair(mem, len);
     }
 
-    template<typename Func>
-    void module::link(const char *module, const char *function_name, Func *function) {
+    template<typename R, typename... Args>
+    void module::link(const char *module, const char *function_name, R (*function)(void*, Args...)) {
+        using Func = R(void*, Args...);
+        M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
+        detail::check_error(ret);
+    }
+    template<typename... Args>
+    void module::link(const char *module, const char *function_name, void (*function)(void*, Args...)) {
+        using Func = void(void*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         detail::check_error(ret);
     }
