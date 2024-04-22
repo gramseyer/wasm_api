@@ -26,7 +26,7 @@ namespace detail
 
 
 std::unique_ptr<WasmRuntime> 
-Wasm3_WasmContext::new_runtime_instance(Script const& contract)
+Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
 	if (contract.data == nullptr)
 	{
@@ -35,7 +35,7 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract)
 
 	auto module = env.parse_module(contract.data, contract.len);
 
-	auto runtime = env.new_runtime(MAX_STACK_BYTES);
+	auto runtime = env.new_runtime(MAX_STACK_BYTES, ctxp);
 
 	runtime->load(*module);
 
@@ -60,6 +60,18 @@ Wasm3_WasmRuntime::invoke<void>(const char* methodname);
 template
 int32_t
 Wasm3_WasmRuntime::invoke<int32_t>(const char* methodname);
+
+template
+int64_t
+Wasm3_WasmRuntime::invoke<int64_t>(const char* methodname);
+
+template
+uint32_t
+Wasm3_WasmRuntime::invoke<uint32_t>(const char* methodname);
+
+template
+uint64_t
+Wasm3_WasmRuntime::invoke<uint64_t>(const char* methodname);
 
 } /* detail */
 

@@ -126,17 +126,23 @@ namespace wasm3 {
         struct wrap_helper;
 
         template <typename Ret, typename ...Args>
-        struct wrap_helper<Ret(Args...)> {
-            using Func = Ret(Args...);
+        struct wrap_helper<Ret(void*, Args...)> {
+            using Func = Ret(void*, Args...);
             static const void *wrap_fn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type mem) {
-                std::tuple<Args...> args;
+                 
+                using base_tuple_t = std::tuple<Args...>;
+                using aug_tuple_t = std::tuple<void*, Args...>;
+
+                base_tuple_t args;
+
                 // The order here matters: m3ApiReturnType should go before calling get_args_from_stack,
                 // since both modify `_sp`, and the return value on the stack is reserved before the arguments.
                 m3ApiReturnType(Ret);
                 get_args_from_stack(_sp, mem, args);
                 Func* function = reinterpret_cast<Func*>(_ctx->userdata);
                 try {
-                    Ret r = std::apply(function, args);
+                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<void*>(m3_GetUserData(rt)), args);
+                    Ret r = std::apply(function, aug_args);
                     m3ApiReturn(r);
                 } 
                 catch (wasm_api::HostError& e)
@@ -151,19 +157,26 @@ namespace wasm3 {
                     std::printf("unknown error type, cannot recover");
                     m3ApiTrap(m3Err_unrecoverableSystemError);
                 }
-                // wasm3 version of this file does not have an m3ApiSuccess here, so presumably not needed
+                // wasm3 version of this file does not have an m3ApiSuccess here, so presumably not needed */
             }
         };
 
         template <typename ...Args>
-        struct wrap_helper<void(Args...)> {
-            using Func = void(Args...);
+        struct wrap_helper<void(void*, Args...)> {
             static const void *wrap_fn(IM3Runtime rt, IM3ImportContext _ctx, stack_type sp, mem_type mem) {
-                std::tuple<Args...> args;
+                
+                using base_tuple_t = std::tuple<Args...>;
+                using aug_tuple_t = std::tuple<void*, Args...>;
+
+                base_tuple_t args;
                 get_args_from_stack(sp, mem, args);
-                Func* function = reinterpret_cast<Func*>(_ctx->userdata);
+
+                using Func = void(void*, Args...);
+
                 try {
-                    std::apply(function, args);
+                    Func* function = reinterpret_cast<Func*>(_ctx->userdata);
+                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<void*>(m3_GetUserData(rt)), args);
+                    std::apply(function, aug_args);
                     m3ApiSuccess();
                 } catch (wasm_api::HostError& e)
                 {
@@ -183,16 +196,30 @@ namespace wasm3 {
         class m3_wrapper;
 
         template<typename Ret, typename ... Args>
-        class m3_wrapper<Ret(Args...)> {
+        class m3_wrapper<Ret(void*, Args...)> {
         public:
             static M3Result link(IM3Module io_module,
                                  const char *const i_moduleName,
                                  const char *const i_functionName,
-                                 Ret (*function)(Args...)) {
+                                 Ret (*function)(void*, Args...)) {
 
                 return m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
                                             m3_signature<Ret, Args...>::value,
-                                            &wrap_helper<Ret(Args...)>::wrap_fn,
+                                            &wrap_helper<Ret(void*, Args...)>::wrap_fn,
+                                            reinterpret_cast<void*>(function));
+            }
+        };
+        template<typename ... Args>
+        class m3_wrapper<void(void*, Args...)> {
+        public:
+            static M3Result link(IM3Module io_module,
+                                 const char *const i_moduleName,
+                                 const char *const i_functionName,
+                                 void (*function)(void*, Args...)) {
+
+                return m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
+                                            m3_signature<void, Args...>::value,
+                                            &wrap_helper<void(void*, Args...)>::wrap_fn,
                                             reinterpret_cast<void*>(function));
             }
         };
@@ -246,7 +273,7 @@ namespace wasm3 {
          * @param stack_size_bytes  size of the WASM stack for this runtime
          * @return runtime object
          */
-        std::unique_ptr<runtime> new_runtime(size_t stack_size_bytes);
+        std::unique_ptr<runtime> new_runtime(size_t stack_size_bytes, void* ctxp);
 
         /**
          * Parse a WASM module from file
@@ -303,9 +330,9 @@ namespace wasm3 {
 
         friend class environment;
 
-        runtime(const std::shared_ptr<M3Environment> &env, size_t stack_size_bytes)
+        runtime(const std::shared_ptr<M3Environment> &env, size_t stack_size_bytes, void* ctxp)
                 : m_env(env) {
-            m_runtime.reset(m3_NewRuntime(env.get(), stack_size_bytes, nullptr), &m3_FreeRuntime);
+            m_runtime.reset(m3_NewRuntime(env.get(), stack_size_bytes, ctxp), &m3_FreeRuntime);
             if (m_runtime == nullptr) {
                 throw std::bad_alloc();
             }
@@ -346,8 +373,10 @@ namespace wasm3 {
         /**
          * Same as module::link, but doesn't throw an exception if the function is not referenced.
          */
-        template<typename Func>
-        void link_optional(const char *module, const char *function_name, Func *function);
+        template<typename ret, typename...Args>
+        void link_optional(const char *module, const char *function_name, ret (*function)(void*, Args...));
+        template<typename...Args>
+        void link_optional(const char *module, const char *function_name, void (*function)(void*, Args...));
 
         ~module()
         {
@@ -504,8 +533,8 @@ namespace wasm3 {
     #endif
     };
 
-    inline std::unique_ptr<runtime> environment::new_runtime(size_t stack_size_bytes) {
-        return std::make_unique<runtime>(m_env, stack_size_bytes);
+    inline std::unique_ptr<runtime> environment::new_runtime(size_t stack_size_bytes, void* ctxp) {
+        return std::make_unique<runtime>(m_env, stack_size_bytes, ctxp);
     }
 
     inline std::unique_ptr<module> environment::parse_module(std::istream &in) {
@@ -537,8 +566,19 @@ namespace wasm3 {
         detail::check_error(ret);
     }
 
-    template<typename Func>
-    void module::link_optional(const char *module, const char *function_name, Func *function) {
+    template<typename R, typename... Args>
+    void module::link_optional(const char *module, const char *function_name, R(*function)(void*, Args...)) {
+        using Func = R(void*, Args...);
+        M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
+        if (ret == m3Err_functionLookupFailed) {
+            return;
+        }
+        detail::check_error(ret);
+    }
+
+    template<typename... Args>
+    void module::link_optional(const char *module, const char *function_name, void(*function)(void*, Args...)) {
+        using Func = void(void*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         if (ret == m3Err_functionLookupFailed) {
             return;

@@ -45,7 +45,7 @@ public:
 		}
 
 	std::unique_ptr<WasmRuntime> 
-	new_runtime_instance(Script const& contract);
+	new_runtime_instance(Script const& contract, void* ctxp);
 };
 
 class Wasm3_WasmRuntime {

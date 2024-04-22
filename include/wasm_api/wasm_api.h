@@ -74,7 +74,7 @@ public:
 	WasmContext(const uint32_t MAX_STACK_BYTES);
  
 	std::unique_ptr<WasmRuntime>
-	new_runtime_instance(Script const& script);//Hash const& script_addr, const script_context_t& context);
+	new_runtime_instance(Script const& script, void* ctxp = nullptr);
 
 	~WasmContext();
 };
@@ -93,13 +93,13 @@ class WasmRuntime {
 	void _link_fn(
 		const char* module,
 		const char* fn_name,
-		ret (*f)(Args...));
+		ret (*f)(void*, Args...));
 
 	template<typename... Args>
 	void _link_fn(
 		const char* module,
 		const char* fn_name,
-		void (*f)(Args...));
+		void (*f)(void*, Args...));
 
 	WasmRuntime(const WasmRuntime&) = delete;
 	WasmRuntime(WasmRuntime&&) = delete;

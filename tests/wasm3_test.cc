@@ -33,7 +33,7 @@ TEST_CASE("call simple", "[wasm3][wasm_api]")
 
 	auto m = e.parse_module(c->data(), c->size());
 
-	auto r = e.new_runtime(65536);
+	auto r = e.new_runtime(65536, nullptr);
 
 	r->load(*m);
 
@@ -51,7 +51,7 @@ TEST_CASE("set memory", "[wasm3][wasm_api]")
 
 	auto m = e.parse_module(c->data(), c->size());
 
-	auto r = e.new_runtime(65536);
+	auto r = e.new_runtime(65536, nullptr);
 
 	r->load(*m);
 

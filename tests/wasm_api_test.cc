@@ -24,31 +24,31 @@ using namespace wasm_api;
 using namespace test;
 
 void
-throw_runtime_error()
+throw_runtime_error(void* ctxp)
 {
     throw std::runtime_error("bad fn");
 }
 
 void
-throw_host_error()
+throw_host_error(void* ctxp)
 {
     throw wasm_api::HostError("host error");
 }
 
 void
-throw_bad_alloc()
+throw_bad_alloc(void* ctxp)
 {
     throw std::bad_alloc();
 }
 
 void
-good_call()
+good_call(void* ctxp)
 {}
 
 static WasmRuntime* s_runtime;
 
 void
-reentrance()
+reentrance(void* ctxp)
 {
     s_runtime->template invoke<void>("unreachable");
 }
