@@ -158,12 +158,9 @@ public:
 	template<detail::VectorLike V>
 	void write_to_memory(V const& array, uint32_t offset, uint32_t max_len)
 	{
-		if (array.size() > max_len)
-		{
-			throw HostError("Array is too big to write");
-		}
+		uint32_t write_len = std::min<uint32_t>(max_len, array.size());
 
-		_write_to_memory(array.data(), offset, array.size());
+		_write_to_memory(array.data(), offset, write_len);
 	}
 
 	template<detail::VectorLike V>
