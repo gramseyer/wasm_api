@@ -44,34 +44,13 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 	return std::unique_ptr<WasmRuntime>(out);
 }
 
-template<typename ret>
-ret  
+uint64_t
 Wasm3_WasmRuntime::invoke(const char* method_name)
 {
 	auto fn = runtime->find_function(method_name);
 
-	return fn.template call<ret>();
+	return fn.template call<uint64_t>();
 }
-
-template
-void
-Wasm3_WasmRuntime::invoke<void>(const char* methodname);
-
-template
-int32_t
-Wasm3_WasmRuntime::invoke<int32_t>(const char* methodname);
-
-template
-int64_t
-Wasm3_WasmRuntime::invoke<int64_t>(const char* methodname);
-
-template
-uint32_t
-Wasm3_WasmRuntime::invoke<uint32_t>(const char* methodname);
-
-template
-uint64_t
-Wasm3_WasmRuntime::invoke<uint64_t>(const char* methodname);
 
 } /* detail */
 

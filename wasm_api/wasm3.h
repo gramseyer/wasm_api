@@ -183,7 +183,7 @@ namespace wasm3 {
                     m3ApiTrap(m3Err_trapHostEnvError);
                 } catch(std::runtime_error& e)
                 {
-                    std::printf("cannot recover from other errors safely: what %s", e.what());
+                    std::printf("cannot recover from other errors safely: what %s\n", e.what());
                     m3ApiTrap(m3Err_unrecoverableSystemError);
                 } catch(...) {
                     std::printf("unknown error type, cannot recover\n");
@@ -441,7 +441,7 @@ namespace wasm3 {
 
         std::shared_ptr<M3Environment> m_env;
         IM3Module m_module;
-        //std::unique_ptr<M3Module> m_module;
+
         bool m_loaded = false;
         std::vector<uint8_t> m_moduleRawData {};
     };

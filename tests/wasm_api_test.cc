@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <catch2/catch_test_macros.hpp>
+#include <gtest/gtest.h>
 
 #include "wasm_api/wasm_api.h"
 
@@ -23,102 +23,118 @@
 using namespace wasm_api;
 using namespace test;
 
-void
+uint64_t
 throw_runtime_error(void* ctxp)
 {
-    throw std::runtime_error("bad fn");
+    throw std::runtime_error("bad fn\n");
 }
 
-void
+uint64_t
 throw_host_error(void* ctxp)
 {
-    throw wasm_api::HostError("host error");
+    throw wasm_api::HostError("host error\n");
 }
 
-void
+uint64_t
 throw_bad_alloc(void* ctxp)
 {
     throw std::bad_alloc();
 }
 
-void
+uint64_t
 good_call(void* ctxp)
-{}
-
-static WasmRuntime* s_runtime;
-
-void
-reentrance(void* ctxp)
-{
-    s_runtime->template invoke<void>("unreachable");
+{ 
+    return 0;
 }
 
-TEST_CASE("call external", "[wasm_api]")
+static WasmRuntime* s_runtime;
+static bool reentrance_hit = false;
+
+uint64_t
+reentrance(void* ctxp)
 {
+    reentrance_hit = true;
+    s_runtime->template invoke<void>("unreachable");
+    return 0;
+}
+
+class ExternalCallTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
     auto c = load_wasm_from_file("tests/wat/test_error_handling.wasm");
 
     Script s {.data = c->data(), .len = c->size()};
 
-    WasmContext ctx(65536);
+    ctx = std::make_unique<WasmContext>(65536);
 
-    auto runtime = ctx.new_runtime_instance(s);
+    runtime = ctx->new_runtime_instance(s);
 
     runtime->template link_fn<&good_call>("test", "good_call");
+  }
 
-    SECTION("unlinked fn")
-    {
-        REQUIRE_THROWS(runtime->template invoke<void>("call1"));
-    }
+  std::unique_ptr<WasmContext> ctx;
+  std::unique_ptr<WasmRuntime> runtime;
+}; 
 
-    SECTION("runtime error")
-    {
-        runtime->template link_fn<&throw_runtime_error>("test",
+TEST_F(ExternalCallTest, unlinked_fn)
+{
+    EXPECT_ANY_THROW(runtime -> template invoke<void>("call1"));
+}
+
+TEST_F(ExternalCallTest, runtime_error)
+{
+    runtime->template link_fn<&throw_runtime_error>("test",
                                                         "external_call");
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("call1"),
+    EXPECT_THROW(runtime->template invoke<void>("call1"),
                           wasm_api::UnrecoverableSystemError);
-    }
-    SECTION("host error")
+}
+
+
+TEST_F(ExternalCallTest, host_error)
+{
+    runtime->template link_fn<&throw_host_error>("test", "external_call");
+    EXPECT_THROW(runtime->template invoke<void>("call1"),
+                      wasm_api::HostError);
+}
+
+TEST_F(ExternalCallTest, other_weird_error)
+{
+    runtime->template link_fn<&throw_bad_alloc>("test", "external_call");
+    EXPECT_THROW(runtime->template invoke<void>("call1"),
+                      wasm_api::UnrecoverableSystemError);
+}
+
+
+
+TEST_F(ExternalCallTest, wasm_error)
     {
-        runtime->template link_fn<&throw_host_error>("test", "external_call");
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("call1"),
+        EXPECT_THROW(runtime->template invoke<void>("unreachable"),
                           wasm_api::HostError);
     }
-    SECTION("other weird error")
-    {
-        runtime->template link_fn<&throw_bad_alloc>("test", "external_call");
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("call1"),
-                          wasm_api::UnrecoverableSystemError);
-    }
 
-    SECTION("wasm error")
-    {
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("unreachable"),
-                          wasm_api::HostError);
-    }
+TEST_F(ExternalCallTest, follow_bad_with_good)
+{
+    runtime->template link_fn<&throw_host_error>("test", "external_call");
+    EXPECT_THROW(runtime->template invoke<void>("call1"),
+                      wasm_api::HostError);
 
-    SECTION("follow bad call with good")
-    {
-        runtime->template link_fn<&throw_host_error>("test", "external_call");
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("call1"),
-                          wasm_api::HostError);
+    runtime->template invoke<void>("call2");
+}
 
-        runtime->template invoke<void>("call2");
-    }
-
-    SECTION("reentrance")
+TEST_F(ExternalCallTest, reentrance)
     {
         runtime->template link_fn<&reentrance>("test", "external_call");
         s_runtime = runtime.get();
 
-        REQUIRE_THROWS_AS(runtime->template invoke<void>("call1"),
+        EXPECT_THROW(runtime->template invoke<void>("call1"),
                           wasm_api::HostError);
+        EXPECT_TRUE(reentrance_hit);
     }
-}
 
-TEST_CASE("null handling", "[wasm_api]")
+TEST(wasmapi, null_handling)
 {
     WasmContext ctx(65535);
 
-    REQUIRE(ctx.new_runtime_instance(null_script) == nullptr);
+    EXPECT_TRUE(ctx.new_runtime_instance(null_script) == nullptr);
 }
 

@@ -30,23 +30,6 @@
 namespace wasm_api
 {
 
-namespace detail
-{
-class Wasm3_WasmContext;
-class Wasm3_WasmRuntime;
-
-void check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
-
-template<typename T>
-concept VectorLike
-= requires (const T object)
-{
-	object.data();
-	object.size();
-};
-
-} /* detail */
-
 typedef std::array<uint8_t, 32> Hash;
 
 /* Does not own the underlying memory */
@@ -60,9 +43,70 @@ constexpr static Script null_script = Script { .data = nullptr, .len = 0 };
 
 class WasmRuntime;
 
+namespace detail
+{
+
+class WasmRuntimeImpl;
+class WasmContextImpl {
+public:
+
+	virtual std::unique_ptr<WasmRuntime>
+	new_runtime_instance(Script const& contract, void* ctxp) = 0;
+
+	virtual ~WasmContextImpl() {}
+};
+
+class WasmRuntimeImpl {
+public:
+	virtual std::pair<uint8_t*, uint32_t> get_memory() = 0;
+	virtual std::pair<const uint8_t*, uint32_t> get_memory() const = 0;
+
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*)) = 0;
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t)) = 0;
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t)) = 0;
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t)) = 0;
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
+	virtual void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
+
+	virtual uint64_t
+	invoke(const char* method_name) = 0;
+
+	virtual ~WasmRuntimeImpl() {}
+};
+
+void check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
+
+template<typename T>
+concept VectorLike
+= requires (const T object)
+{
+	object.data();
+	object.size();
+};
+
+} /* detail */
+
 class WasmContext {
 
-	detail::Wasm3_WasmContext* impl;
+	detail::WasmContextImpl* impl;
 
 	WasmContext(const WasmContext&) = delete;
 	WasmContext(WasmContext&&) = delete;
@@ -81,54 +125,45 @@ public:
 
 class WasmRuntime {
 
-	detail::Wasm3_WasmRuntime* impl;
+	detail::WasmRuntimeImpl* impl;
 
 	std::pair<uint8_t*, uint32_t> get_memory();
-
 	std::pair<const uint8_t*, uint32_t> get_memory() const;
-
-	friend class detail::Wasm3_WasmContext;
-
-	template<typename ret, typename... Args>
-	void _link_fn(
-		const char* module,
-		const char* fn_name,
-		ret (*f)(void*, Args...));
-
-	template<typename... Args>
-	void _link_fn(
-		const char* module,
-		const char* fn_name,
-		void (*f)(void*, Args...));
 
 	WasmRuntime(const WasmRuntime&) = delete;
 	WasmRuntime(WasmRuntime&&) = delete;
 	WasmRuntime& operator=(const WasmRuntime&) = delete;
 	WasmRuntime& operator=(WasmRuntime&&) = delete;
 
-	//takes ownership of impl
-	WasmRuntime(detail::Wasm3_WasmRuntime* impl);
-
 	void _write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t len);
 
 public:
-	 
-	template<typename ret>
-	ret invoke(const char* method_name);
+	//takes ownership of impl
+	WasmRuntime(detail::WasmRuntimeImpl* impl);
 
+	template<typename ret>
+	ret invoke(const char* method_name) {
+		if constexpr (std::is_same<ret, void>::value) {
+			impl -> invoke(method_name);
+		} else {
+			return static_cast<ret>(impl -> invoke(method_name));
+		}
+	}
+
+	// At the moment, this only supports uint64 input types.
 	template<auto f>
 	void link_fn(
 		const char* module,
 		const char* fn_name)
 	{
-		_link_fn(module, fn_name, f);
+		impl -> link_fn(module, fn_name, f);
 	}
 
 	template<auto f>
 	void link_env(
 		const char* fn_name)
 	{
-		_link_fn("env", fn_name, f);
+		impl -> link_fn("env", fn_name, f);
 	}
 
 	template<typename ArrayLike>

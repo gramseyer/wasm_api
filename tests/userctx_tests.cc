@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <catch2/catch_test_macros.hpp>
+#include <gtest/gtest.h>
 
 #include "wasm_api/wasm_api.h"
 
@@ -27,16 +27,16 @@ using namespace test;
 
 void* ctx_check = (void*) (0xAABBCCDD'EEFF0011);
 
-uint32_t foo(void* ctx, uint32_t value)
+uint64_t foo(void* ctx, uint64_t value)
 {
-	REQUIRE(ctx == ctx_check);
-	REQUIRE(value == 12);
+	EXPECT_TRUE(ctx == ctx_check);
+	EXPECT_TRUE(value == 12);
 	return 15;
 }
 
 uint32_t expect = 0;
 
-TEST_CASE("invoke", "[env][wasm_api]")
+TEST(wasm3, userctx)
 {
 	auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
 
@@ -48,7 +48,7 @@ TEST_CASE("invoke", "[env][wasm_api]")
 
 	runtime->template link_fn<&foo>("test", "redir_call");
 
-	REQUIRE(runtime->template invoke<uint32_t>("calltest") == 15);
+	EXPECT_EQ(runtime->template invoke<uint32_t>("calltest"), 15u);
 }
 
 

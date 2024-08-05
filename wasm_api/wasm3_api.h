@@ -29,7 +29,7 @@ namespace detail
 
 class Wasm3_WasmRuntime;
 
-class Wasm3_WasmContext {
+class Wasm3_WasmContext : public detail::WasmContextImpl {
 
 	wasm3::environment env;
 
@@ -44,24 +44,23 @@ public:
 		{
 		}
 
-	std::unique_ptr<WasmRuntime> 
-	new_runtime_instance(Script const& contract, void* ctxp);
+	std::unique_ptr<WasmRuntime>
+	new_runtime_instance(Script const& contract, void* ctxp) override;
 };
 
-class Wasm3_WasmRuntime {
+class Wasm3_WasmRuntime : public detail::WasmRuntimeImpl {
 
 	std::unique_ptr<wasm3::runtime> runtime;
 	std::unique_ptr<wasm3::module> module;
 
 public:
 
-	std::pair<uint8_t*, uint32_t> get_memory()
+	std::pair<uint8_t*, uint32_t> get_memory() override
 	{
 		return runtime->get_memory();
 	}
 
-	std::pair<const uint8_t*, uint32_t> 
-	get_memory() const
+	std::pair<const uint8_t*, uint32_t> get_memory() const override
 	{
 		return runtime->get_memory();
 	}
@@ -71,8 +70,51 @@ public:
 		, module(std::move(m))
 		{}
 
-	template<typename... Args>
 	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*)) 
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t))
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t))
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+	void link_fn(
+		const char* module_name,
+		const char* fn_name,
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
+	{
+		_link_fn(module_name, fn_name, f);
+	}
+
+	template<typename ...Args>
+	void _link_fn(
 		const char* module_name,
 		const char* fn_name,
 		auto (*f)(Args...))
@@ -80,9 +122,8 @@ public:
 		module->link_optional(module_name, fn_name, f);
 	}
 
-	template<typename ret>
-	ret 
-	invoke(const char* method_name);
+	uint64_t
+	invoke(const char* method_name) override;
 };
 
 } /* detail */

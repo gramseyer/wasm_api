@@ -48,7 +48,7 @@ WasmContext::~WasmContext()
     impl = nullptr;
 }
 
-WasmRuntime::WasmRuntime(detail::Wasm3_WasmRuntime* impl)
+WasmRuntime::WasmRuntime(detail::WasmRuntimeImpl* impl)
 		: impl(impl)
 		{}
 
@@ -73,91 +73,6 @@ WasmRuntime::get_memory() const
 {
     return impl->get_memory();
 }
-
-template<typename ret>
-ret
-WasmRuntime::invoke(const char* method_name)
-{
-    return impl->template invoke<ret>(method_name);
-}
-
-template void
-WasmRuntime::invoke<void>(const char* methodname);
-
-template int32_t
-WasmRuntime::invoke<int32_t>(const char* methodname);
-
-template uint32_t
-WasmRuntime::invoke<uint32_t>(const char* methodname);
-
-template int64_t
-WasmRuntime::invoke<int64_t>(const char* methodname);
-
-template uint64_t
-WasmRuntime::invoke<uint64_t>(const char* methodname);
-
-template<typename ret, typename... Args>
-void
-WasmRuntime::_link_fn(const char* module,
-                      const char* fn_name,
-                      ret (*f)(void*, Args...))
-{
-    impl->link_fn(module, fn_name, f);
-}
-
-template<typename... Args>
-void
-WasmRuntime::_link_fn(const char* module,
-                      const char* fn_name,
-                      void (*f)(void*, Args...))
-{
-    impl->link_fn(module, fn_name, f);
-}
-
-#define LINK_DECL(...)                                                         \
-    template void WasmRuntime::_link_fn<uint32_t, __VA_ARGS__>(                \
-        const char* module, const char* fn_name, uint32_t (*f)(void*, __VA_ARGS__));  \
-    template void WasmRuntime::_link_fn<int32_t, __VA_ARGS__>(                 \
-        const char* module, const char* fn_name, int32_t (*f)(void*, __VA_ARGS__));   \
-    template void WasmRuntime::_link_fn<uint64_t, __VA_ARGS__>(                \
-        const char* module, const char* fn_name, uint64_t (*f)(void*, __VA_ARGS__));  \
-    template void WasmRuntime::_link_fn<int64_t, __VA_ARGS__>(                 \
-        const char* module, const char* fn_name, int64_t (*f)(void*, __VA_ARGS__));   \
-    template void WasmRuntime::_link_fn<__VA_ARGS__>(                          \
-        const char* module, const char* fn_name, void (*f)(void*, __VA_ARGS__));
-
-LINK_DECL(uint32_t)
-
-LINK_DECL(uint32_t, uint32_t)
-LINK_DECL(uint32_t, uint32_t, uint32_t)
-LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t)
-LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
-LINK_DECL(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t)
-
-LINK_DECL(uint32_t, int64_t)
-LINK_DECL(uint32_t, int64_t, int64_t)
-
-LINK_DECL(uint32_t, uint64_t)
-LINK_DECL(uint32_t, uint32_t, uint64_t)
-LINK_DECL(uint32_t, uint64_t, uint32_t)
-
-LINK_DECL(uint64_t)
-LINK_DECL(uint64_t, uint32_t)
-LINK_DECL(uint64_t, uint32_t, uint32_t)
-
-LINK_DECL(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)
-
-template void WasmRuntime::_link_fn<uint32_t>(                
-    const char* module, const char* fn_name, uint32_t (*f)(void*));  
-template void WasmRuntime::_link_fn<int32_t>(                 
-    const char* module, const char* fn_name, int32_t (*f)(void*)); 
-template void WasmRuntime::_link_fn<uint64_t>(                
-    const char* module, const char* fn_name, uint64_t (*f)(void*));  
-template void WasmRuntime::_link_fn<int64_t>(                 
-    const char* module, const char* fn_name, int64_t (*f)(void*));     
-template void WasmRuntime::_link_fn<>(                          
-    const char* module, const char* fn_name, void (*f)(void*));
-
 
 int32_t
 WasmRuntime::memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const

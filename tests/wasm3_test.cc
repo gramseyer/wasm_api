@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <catch2/catch_test_macros.hpp>
+#include <gtest/gtest.h>
 
 #include "wasm_api/wasm3.h"
 
@@ -25,7 +25,7 @@
 using namespace wasm_api;
 using namespace test;
 
-TEST_CASE("call simple", "[wasm3][wasm_api]")
+TEST(wasm3, call)
 {
 	wasm3::environment e;
 
@@ -40,11 +40,11 @@ TEST_CASE("call simple", "[wasm3][wasm_api]")
 	auto f = r->find_function("add");
 
 	int32_t res = f.template call<int32_t>(15, 20);
-	REQUIRE(res == 35);
+	EXPECT_EQ(res, 35);
 }
 
 
-TEST_CASE("set memory", "[wasm3][wasm_api]")
+TEST(wasm3, set_memory)
 {
 	wasm3::environment e;
 	auto c = load_wasm_from_file("tests/wat/test_set_memory.wasm");
@@ -57,7 +57,7 @@ TEST_CASE("set memory", "[wasm3][wasm_api]")
 
 	auto sz = r->find_function("size");
 
-	REQUIRE(sz.template call<int32_t>() == 1);
+	EXPECT_TRUE(sz.template call<int32_t>() == 1);
 
 	auto store = r->find_function("store");
 
@@ -69,24 +69,24 @@ TEST_CASE("set memory", "[wasm3][wasm_api]")
 
 	uint32_t mem0 = load.template call<int32_t>(0);
 
-	REQUIRE(mem0 == 0x12345678);
+	EXPECT_TRUE(mem0 == 0x12345678);
 
 	auto load8 = r->find_function("load8");
 
-	REQUIRE(load8.template call<int32_t>(0) == 0x78);
-	REQUIRE(load8.template call<int32_t>(1) == 0x56);
+	EXPECT_TRUE(load8.template call<int32_t>(0) == 0x78);
+	EXPECT_TRUE(load8.template call<int32_t>(1) == 0x56);
 
 	auto load16 = r->find_function("load16");
 
-	REQUIRE(load16.template call<int32_t>(3) == 0x9012);
+	EXPECT_TRUE(load16.template call<int32_t>(3) == 0x9012);
 
 	auto [mem_ptr, mlen] = r->get_memory();
 
-	REQUIRE(mlen == 65536);
+	EXPECT_TRUE(mlen == 65536);
 
 	uint32_t buf[2];
 	buf[0] = 0x12345678;
 	buf[1] = 0xABCDEF90;
 
-	REQUIRE(0 == memcmp(mem_ptr, (uint8_t*)buf, 8));
+	EXPECT_TRUE(0 == memcmp(mem_ptr, (uint8_t*)buf, 8));
 }
