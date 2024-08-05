@@ -1,6 +1,7 @@
 
 
 wasm_api_CFLAGS = -I %reldir%/include
+wasm_api_LIBS = %reldir%/stitch_lib/target/release/libstitch_lib.a
 
 WASM3_SRCS = \
 	%reldir%/wasm3/source/m3_api_libc.c \
@@ -40,4 +41,8 @@ WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_invoke.wat
 
 WASM_API_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
+
+%reldir%/stitch_lib/target/release/libstitch_lib.a : %reldir%/stitch_lib/src/*.rs
+	cd %reldir%/stitch_lib && \
+	cargo build --release --package stitch_lib
 
