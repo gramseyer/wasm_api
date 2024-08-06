@@ -49,10 +49,39 @@ pub struct InvokeResult {
     error : bool
 }
 
+#[repr(C)]
+pub struct MemorySlice {
+    mem : *mut u8,
+    sz : u32
+}
+
 #[no_mangle]
-pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, bytes_len : usize) -> InvokeResult
+pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
 {
-    let slice = unsafe { slice::from_raw_parts(bytes, bytes_len) };
+    let r = unsafe { &mut *runtime };
+
+    match r.instance.exported_mem("memory") {
+        Some(mem) => {
+            let slice = mem.bytes_mut(&mut r.store);
+            MemorySlice {
+                mem : slice.as_mut_ptr(),
+                sz : slice.len() as u32
+            }
+            
+        },
+        _ => {
+            MemorySlice {
+                mem : std::ptr::null_mut(),
+                sz : 0
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, bytes_len : u32) -> InvokeResult
+{
+    let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
     let string = match std::str::from_utf8(&slice) {
         Ok(v) => v,
@@ -80,7 +109,7 @@ pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, by
 }
 
 #[no_mangle]
-pub extern "C" fn new_context() -> *mut Rc<Stitch_WasmContext> {
+pub extern "C" fn new_stitch_context() -> *mut Rc<Stitch_WasmContext> {
     let out = std::mem::ManuallyDrop::new(
         Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
 
@@ -89,14 +118,14 @@ pub extern "C" fn new_context() -> *mut Rc<Stitch_WasmContext> {
 }
 
 #[no_mangle]
-pub extern "C" fn free_context(p : *mut Rc<Stitch_WasmContext>) {
+pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
     unsafe { ptr::drop_in_place(p) };
 }
 
 #[no_mangle]
-pub fn new_runtime(bytes: *const u8, bytes_len : usize, context : *mut Rc<Stitch_WasmContext>) -> *mut Stitch_WasmRuntime
+pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>) -> *mut Stitch_WasmRuntime
 {
-    let slice = unsafe { slice::from_raw_parts(bytes, bytes_len) };
+    let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
     let out = std::mem::ManuallyDrop::new(
         Stitch_WasmRuntime::new(unsafe {&*context}, &slice));
@@ -106,6 +135,6 @@ pub fn new_runtime(bytes: *const u8, bytes_len : usize, context : *mut Rc<Stitch
 }
 
 #[no_mangle]
-pub extern "C" fn free_runtime(p : *mut Stitch_WasmRuntime) {
+pub extern "C" fn free_stitch_runtime(p : *mut Stitch_WasmRuntime) {
     unsafe { ptr::drop_in_place(p) };
 }

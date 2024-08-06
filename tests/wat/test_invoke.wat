@@ -23,4 +23,5 @@
     call $foo
   ) 
   (memory 1 1)
+  (export "memory" (memory 0))
 )

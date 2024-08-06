@@ -150,11 +150,11 @@ namespace wasm3 {
                     m3ApiTrap(m3Err_trapHostEnvError);
                 } catch(std::runtime_error& e)
                 {
-                    std::printf("cannot recover from other errors safely: what %s", e.what());
+                    std::printf("cannot recover from other errors safely: what %s\n", e.what());
                     m3ApiTrap(m3Err_unrecoverableSystemError);
                 } catch(...)
                 {
-                    std::printf("unknown error type, cannot recover");
+                    std::printf("unknown error type, cannot recover\n");
                     m3ApiTrap(m3Err_unrecoverableSystemError);
                 }
                 // wasm3 version of this file does not have an m3ApiSuccess here, so presumably not needed */

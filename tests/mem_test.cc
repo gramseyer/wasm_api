@@ -59,27 +59,28 @@ TEST_F(MemoryAccessTests, good_memcpy)
 	
 }
 
+TEST_F(MemoryAccessTests, identical_memcpy)
+{
+	EXPECT_ANY_THROW(runtime->safe_memcpy(10, 10, 4));
+}
+
+TEST_F(MemoryAccessTests, small_overlap_dst_before_src)
+{
+	EXPECT_ANY_THROW(runtime->safe_memcpy(9, 10, 4));
+}
+
+TEST_F(MemoryAccessTests, small_overlap_src_before_dst)
+{
+	EXPECT_ANY_THROW(runtime->safe_memcpy(10, 9, 4));
+}
+
+TEST_F(MemoryAccessTests, read_from_memory)
+{
+	std::vector<uint8_t> cmp = runtime -> template load_from_memory<std::vector<uint8_t>>(10, 4);
+	EXPECT_EQ(cmp , buf);
+}
 /*
-	SECTION("identical location memcpy")
-	{
-		REQUIRE_THROWS(runtime -> safe_memcpy(10, 10, 4));
-	}
 
-	SECTION("small overlap memcpy dst < src")
-	{
-		REQUIRE_THROWS(runtime -> safe_memcpy(9, 10, 4));
-	}
-
-	SECTION("small overlap memcpy src < dst")
-	{
-		REQUIRE_THROWS(runtime -> safe_memcpy(11, 10, 4));
-	}
-
-	SECTION("read from memory")
-	{
-		std::vector<uint8_t> cmp = runtime -> template load_from_memory<std::vector<uint8_t>>(10, 4);
-		REQUIRE(cmp == buf);
-	}
 	SECTION("read fixed size buf")
 	{
 		std::array<uint8_t, 4> arr;
