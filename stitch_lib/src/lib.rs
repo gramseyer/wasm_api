@@ -37,14 +37,11 @@ pub struct Stitch_WasmRuntime {
 
 impl Stitch_WasmRuntime {
     pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8]) -> Stitch_WasmRuntime {
-        println!("what");
         let mut store = Store::new(context.engine.clone());
-        println!("here");
         let module = Module::new(store.engine(), &bytes).unwrap();
-        println!("there");
         let instance = Linker::new().instantiate(&mut store, &module).unwrap();
-        println!("blah");
 
+        println!("init");
         Self {
             context : context.clone(),
             module : module,
@@ -80,6 +77,7 @@ pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
             }
         },
         _ => {
+            println!("no memory found");
             MemorySlice {
                 mem : std::ptr::null_mut(),
                 sz : 0
@@ -123,20 +121,12 @@ pub extern "C" fn new_stitch_context() -> *mut Rc<Stitch_WasmContext> {
     let b = Box::new(Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
 
     return Box::into_raw(b);
-
-   /* //let mut ctx = Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new());
-    std::mem::forget(b);
-   //     Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
-
-    //let o : *mut Rc<Stitch_WasmContext> = &mut ctx;//ManuallyDrop::into_inner(out);
-    return &mut ctx; */
 }
 
 #[no_mangle]
 pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
 
     unsafe { drop(Box::from_raw(p)); }
-    //unsafe { ptr::drop_in_place(p) };
 }
 
 #[no_mangle]

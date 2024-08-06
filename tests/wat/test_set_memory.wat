@@ -36,4 +36,5 @@
   (func (export "store16") (param i32 i32)
     (i32.store16 (local.get 0) (local.get 1))
   )
+  (export "memory" (memory 0))
 )
