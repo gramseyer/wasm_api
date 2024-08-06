@@ -34,22 +34,33 @@ uint64_t foo(void* ctx, uint64_t value)
 	return 15;
 }
 
+class UserCtxTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
+
+ protected:
+  void SetUp() override {
+    auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
+
+    Script s {.data = c->data(), .len = c->size()};
+
+    ctx = std::make_unique<WasmContext>(65536, GetParam());
+
+    runtime = ctx->new_runtime_instance(s, ctx_check);
+
+    runtime->template link_fn<&foo>("test", "redir_call");
+  }
+
+  std::unique_ptr<WasmContext> ctx;
+  std::unique_ptr<WasmRuntime> runtime;
+}; 
+
 uint32_t expect = 0;
 
-TEST(wasm3, userctx)
+TEST_P(UserCtxTests, check_userctx_correct)
 {
-	auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
-
-	WasmContext ctx (65536);
-
-	Script s {.data = c -> data(), .len = c -> size() };
-
-	auto runtime = ctx.new_runtime_instance(s, ctx_check);
-
-	runtime->template link_fn<&foo>("test", "redir_call");
-
 	EXPECT_EQ(runtime->template invoke<uint32_t>("calltest"), 15u);
 }
 
+INSTANTIATE_TEST_SUITE_P(AllEngines, UserCtxTests,
+                        ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, wasm_api::SupportedWasmEngine::MAKEPAD_STITCH));
 
 } /* wasm_api */

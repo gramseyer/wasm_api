@@ -61,23 +61,23 @@ public:
 	 void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t)) {}
+		uint64_t (*f)(void*, uint64_t));
 	 void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t)) {}
+		uint64_t (*f)(void*, uint64_t, uint64_t));
 	 void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t)) {}
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t));
 	 void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t)) {}
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t));
 	 void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) {}
+		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
 
 	uint64_t
 	invoke(std::string const& method_name) override final;

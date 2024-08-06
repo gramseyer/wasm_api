@@ -21,16 +21,16 @@
   (import "test" "good_call" (func (;0;) (type 0)))
 
 
-  (func (export "call1") (result i32)
+  (func (export "call1") (result i64)
     call 0
     drop
-    i32.const 0)
+    i64.const 0)
 
-  (func (export "call2") (result i32)
+  (func (export "call2") (result i64)
     call 1
     drop
-    i32.const 1)
+    i64.const 1)
 
-  (func (export "unreachable") (result i32)
+  (func (export "unreachable") (result i64)
     unreachable)
 )
