@@ -6,7 +6,7 @@ extern "C"
 {
 void* new_stitch_context();
 void free_stitch_context(void* stitch_context);
-void* new_stitch_runtime(const uint8_t* data, uint32_t size, void* stitch_context);
+void* new_stitch_runtime(const uint8_t* data, uint32_t size, void* stitch_context, void* userctx);
 void free_stitch_runtime(void* stitch_runtime);
 }
 
@@ -43,8 +43,8 @@ class Stitch_WasmRuntime : public detail::WasmRuntimeImpl {
 
 public:
 
-	Stitch_WasmRuntime(Script const& data, void* context_pointer)
-		: runtime_pointer(new_stitch_runtime(data.data, data.len, context_pointer))
+	Stitch_WasmRuntime(Script const& data, void* context_pointer, void* userctx)
+		: runtime_pointer(new_stitch_runtime(data.data, data.len, context_pointer, userctx))
 		{}
 
 	~Stitch_WasmRuntime() {
@@ -55,28 +55,28 @@ public:
 	std::pair<const uint8_t*, uint32_t> get_memory() const override final;
 
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
-		uint64_t (*f)(void*)) {}
+		std::string const& module_name,
+		std::string const& fn_name,
+		uint64_t (*f)(void*));
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t)) {}
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t)) {}
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t)) {}
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t)) {}
 	 void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) {}
 
 	uint64_t

@@ -7,4 +7,4 @@ edition = "2021"
 makepad-stitch = "0.1.0"
 
 [lib]
-crate-type = ["cdylib", "staticlib", "rlib"]
+crate-type = ["staticlib", "rlib"]

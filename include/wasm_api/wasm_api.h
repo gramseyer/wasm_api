@@ -62,28 +62,28 @@ public:
 	virtual std::pair<const uint8_t*, uint32_t> get_memory() const = 0;
 
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*)) = 0;
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t)) = 0;
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
 
 	virtual uint64_t

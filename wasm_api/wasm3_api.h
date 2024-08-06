@@ -68,43 +68,43 @@ public:
 		{}
 
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*)) 
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
@@ -112,11 +112,11 @@ public:
 
 	template<typename ...Args>
 	void _link_fn(
-		const char* module_name,
-		const char* fn_name,
+		std::string const& module_name,
+		std::string const& fn_name,
 		auto (*f)(Args...))
 	{
-		module->link_optional(module_name, fn_name, f);
+		module->link_optional(module_name.c_str(), fn_name.c_str(), f);
 	}
 
 	uint64_t

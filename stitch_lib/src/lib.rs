@@ -1,9 +1,12 @@
-use makepad_stitch::{Engine, Linker, Module, Store, Instance};
+use makepad_stitch::{Engine, Linker, Module, Store, Instance, Func};
 
 use std::rc::Rc;
 use std::slice;
+use core::ffi::c_void;
 
 use makepad_stitch::Val;
+
+use core::str::Utf8Error;
 
 #[allow(non_camel_case_types)]
 pub struct Stitch_WasmContext {
@@ -31,11 +34,25 @@ pub struct Stitch_WasmRuntime {
     module : Module,
     store : Store,
     linker: Linker,
+    userctx : *mut c_void,
     instance : Option<Instance>,
 }
 
+extern "C" {
+    fn c_call_0args(fn_pointer : *mut c_void, userctx : *mut c_void) -> u64;
+}
+
+#[derive(Clone)]
+pub struct AnnoyingBorrowBypass {
+    fn_pointer : *mut c_void,
+    userctx : *mut c_void
+}
+
+unsafe impl Send for AnnoyingBorrowBypass {}
+unsafe impl Sync for AnnoyingBorrowBypass {}
+
 impl Stitch_WasmRuntime {
-    pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8]) -> Stitch_WasmRuntime {
+    pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8], userctx : *mut c_void) -> Stitch_WasmRuntime {
         let store = Store::new(context.engine.clone());
         let module = Module::new(store.engine(), &bytes).unwrap();
         //let instance = Linker::new().instantiate(&mut store, &module).unwrap();
@@ -46,6 +63,7 @@ impl Stitch_WasmRuntime {
             module : module,
             store : store,
             linker: Linker::new(),
+            userctx : userctx,
             instance : None
         }
     }
@@ -63,6 +81,30 @@ impl Stitch_WasmRuntime {
             }
         }
     }
+
+    pub fn link_function_0args(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move || -> u64 {
+                return annoying_blah(x.clone());
+            });
+        
+
+        self.linker.define(import_name, fn_name, func);
+    }
+}
+
+fn annoying_blah(x : AnnoyingBorrowBypass) -> u64
+{
+    return unsafe {
+        c_call_0args(x.fn_pointer, x.userctx)
+    };
 }
 
 #[repr(C)]
@@ -106,6 +148,38 @@ pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
             }
         }
     }
+}
+
+fn string_from_parts(bytes : *const u8, len : u32) -> Result<String, Utf8Error> {
+    let slice = unsafe { slice::from_raw_parts(bytes, len as usize) };
+    match std::str::from_utf8(&slice) {
+        Ok(s) => Ok(s.to_owned()),
+        Err(x) => Err(x)
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn stitch_link_0args(
+    runtime : *mut Stitch_WasmRuntime, 
+    module_name: *const u8, 
+    module_name_len : u32,
+    method_name : *const u8,
+    method_name_len : u32,
+    function_pointer: *mut c_void)
+{
+    let module = match string_from_parts(module_name, module_name_len) {
+        Ok(x) => x,
+        _ => {return;}
+    };
+
+    let method = match string_from_parts(method_name, method_name_len) {
+        Ok(x) => x,
+        _ => {return;}
+    };
+
+    let r = unsafe {&mut *runtime};
+
+    r.link_function_0args(function_pointer, &module, &method);
 }
 
 #[no_mangle]
@@ -157,14 +231,14 @@ pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
 }
 
 #[no_mangle]
-pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>) -> *mut Stitch_WasmRuntime
+pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>, userctx : *mut c_void) -> *mut Stitch_WasmRuntime
 {
     println!("params {:p} {} {:p}", bytes, bytes_len, context);
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
     println!("make slice");
 
-    let b = Box::new(Stitch_WasmRuntime::new( unsafe {&*context}, &slice));
+    let b = Box::new(Stitch_WasmRuntime::new( unsafe {&*context}, &slice, userctx));
 
     return Box::into_raw(b);
 }
