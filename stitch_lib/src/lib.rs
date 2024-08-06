@@ -15,7 +15,7 @@ pub struct Stitch_WasmContext {
 
 impl Stitch_WasmContext {
     pub fn new() -> Stitch_WasmContext {
-        println!("create wasmcontext");
+        //println!("create wasmcontext");
         Self {
             engine : Engine::new(),
         }
@@ -24,7 +24,7 @@ impl Stitch_WasmContext {
 
 impl Drop for Stitch_WasmContext {
     fn drop(&mut self) {
-        println!("dropping wasmContext");
+       // println!("dropping wasmContext");
     }
 }
 
@@ -85,8 +85,6 @@ impl Stitch_WasmRuntime {
         let store = Store::new(context.engine.clone());
         let module = Module::new(store.engine(), &bytes).unwrap();
         //let instance = Linker::new().instantiate(&mut store, &module).unwrap();
-
-        println!("init");
         Self {
             context : context.clone(),
             module : module,
@@ -420,10 +418,7 @@ pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
 #[no_mangle]
 pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>, userctx : *mut c_void) -> *mut Stitch_WasmRuntime
 {
-    println!("params {:p} {} {:p}", bytes, bytes_len, context);
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
-
-    println!("make slice");
 
     let b = Box::new(Stitch_WasmRuntime::new( unsafe {&*context}, &slice, userctx));
 
