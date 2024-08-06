@@ -1,8 +1,6 @@
 use makepad_stitch::{Engine, Linker, Module, Store, Instance};
 
 use std::rc::Rc;
-use core::ptr;
-use core::mem::ManuallyDrop;
 use std::slice;
 
 use makepad_stitch::Val;
@@ -32,21 +30,37 @@ pub struct Stitch_WasmRuntime {
     context : Rc<Stitch_WasmContext>,
     module : Module,
     store : Store,
-    instance : Instance,
+    linker: Linker,
+    instance : Option<Instance>,
 }
 
 impl Stitch_WasmRuntime {
     pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8]) -> Stitch_WasmRuntime {
-        let mut store = Store::new(context.engine.clone());
+        let store = Store::new(context.engine.clone());
         let module = Module::new(store.engine(), &bytes).unwrap();
-        let instance = Linker::new().instantiate(&mut store, &module).unwrap();
+        //let instance = Linker::new().instantiate(&mut store, &module).unwrap();
 
         println!("init");
         Self {
             context : context.clone(),
             module : module,
             store : store,
-            instance : instance
+            linker: Linker::new(),
+            instance : None
+        }
+    }
+    pub fn lazy_link(&mut self) -> Result<(), makepad_stitch::Error>{
+        match self.instance {
+            Some(_) => {return Ok(()); },
+            None => {
+                match self.linker.instantiate(&mut self.store, &self.module) {
+                    Ok(inst) => {
+                        self.instance = Some(inst);
+                        return Ok(());
+                    },
+                    Err(x) => Err(x)
+                }
+            }
         }
     }
 }
@@ -68,7 +82,15 @@ pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
 {
     let r = unsafe { &mut *runtime };
 
-    match r.instance.exported_mem("memory") {
+    match r.lazy_link() {
+        Ok(_) => (),
+        Err(_) => { return MemorySlice {
+            mem: std::ptr::null_mut(),
+            sz : 0
+        };}
+    };
+
+    match r.instance.as_mut().expect("lazily linked").exported_mem("memory") {
         Some(mem) => {
             let slice = mem.bytes_mut(&mut r.store);
             MemorySlice {
@@ -98,7 +120,12 @@ pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, by
 
     let r = unsafe {&mut *runtime};
 
-    let func = match r.instance.exported_func(string) {
+    match r.lazy_link() {
+        Ok(_) => {},
+        Err(_) => { return InvokeResult {result : 0, error : true }; },
+    };
+
+    let func = match r.instance.as_mut().expect("lazily linked").exported_func(string) {
         Some(v) => v,
         _ => { return InvokeResult { result : 0, error : true }; }
     };
