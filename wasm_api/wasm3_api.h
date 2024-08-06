@@ -24,9 +24,6 @@
 namespace wasm_api
 {
 
-namespace detail
-{
-
 class Wasm3_WasmRuntime;
 
 class Wasm3_WasmContext : public detail::WasmContextImpl {
@@ -123,9 +120,7 @@ public:
 	}
 
 	uint64_t
-	invoke(const char* method_name) override;
+	invoke(std::string const& method_name) override;
 };
-
-} /* detail */
 
 } /* wasm_api */

@@ -21,10 +21,6 @@
 namespace wasm_api
 {
 
-namespace detail
-{
-
-
 std::unique_ptr<WasmRuntime> 
 Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
@@ -45,13 +41,11 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 }
 
 uint64_t
-Wasm3_WasmRuntime::invoke(const char* method_name)
+Wasm3_WasmRuntime::invoke(std::string const& method_name)
 {
-	auto fn = runtime->find_function(method_name);
+	auto fn = runtime->find_function(method_name.c_str());
 
 	return fn.template call<uint64_t>();
 }
-
-} /* detail */
 
 } /* wasm_api */

@@ -87,7 +87,7 @@ public:
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
 
 	virtual uint64_t
-	invoke(const char* method_name) = 0;
+	invoke(std::string const& method_name) = 0;
 
 	virtual ~WasmRuntimeImpl() {}
 };
@@ -104,6 +104,11 @@ concept VectorLike
 
 } /* detail */
 
+enum class SupportedWasmEngine {
+	WASM3 = 0,
+	MAKEPAD_STITCH = 1
+};
+
 class WasmContext {
 
 	detail::WasmContextImpl* impl;
@@ -115,7 +120,7 @@ class WasmContext {
 
 public:
 
-	WasmContext(const uint32_t MAX_STACK_BYTES);
+	WasmContext(const uint32_t MAX_STACK_BYTES, SupportedWasmEngine engine = SupportedWasmEngine::WASM3);
  
 	std::unique_ptr<WasmRuntime>
 	new_runtime_instance(Script const& script, void* ctxp = nullptr);
@@ -142,7 +147,7 @@ public:
 	WasmRuntime(detail::WasmRuntimeImpl* impl);
 
 	template<typename ret>
-	ret invoke(const char* method_name) {
+	ret invoke(std::string const& method_name) {
 		if constexpr (std::is_same<ret, void>::value) {
 			impl -> invoke(method_name);
 		} else {

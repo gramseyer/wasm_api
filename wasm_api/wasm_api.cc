@@ -19,6 +19,7 @@
 #include "wasm_api/wasm_api.h"
 
 #include "wasm_api/wasm3_api.h"
+#include "wasm_api/stitch_api.h"
 
 #include <string.h>
 
@@ -26,8 +27,17 @@ namespace wasm_api
 {
 
 WasmContext::WasmContext(
-                         const uint32_t MAX_STACK_BYTES)
-    : impl(new detail::Wasm3_WasmContext(MAX_STACK_BYTES))
+                         const uint32_t MAX_STACK_BYTES, SupportedWasmEngine engine)
+    : impl([&] () -> detail::WasmContextImpl* {
+        switch (engine) {
+        case SupportedWasmEngine::WASM3:
+            return new Wasm3_WasmContext(MAX_STACK_BYTES);
+        case SupportedWasmEngine::MAKEPAD_STITCH:
+            return new Stitch_WasmContext();
+        default:
+            return nullptr;
+        }
+    } ())
 {}
 
 std::unique_ptr<WasmRuntime>

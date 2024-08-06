@@ -2,12 +2,6 @@
 
 #include "wasm_api/wasm_api.h"
 
-struct InvokeResult {
-    uint64_t result;
-    bool error;
-};
-
-
 extern "C"
 {
 void* new_stitch_context();
@@ -57,8 +51,8 @@ public:
 		free_stitch_runtime(runtime_pointer);
 	}
 
-	std::pair<uint8_t*, uint32_t> get_memory();
-	std::pair<const uint8_t*, uint32_t> get_memory() const;
+	std::pair<uint8_t*, uint32_t> get_memory() override final;
+	std::pair<const uint8_t*, uint32_t> get_memory() const override final;
 
 	 void link_fn(
 		const char* module_name,
@@ -86,7 +80,7 @@ public:
 		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) {}
 
 	uint64_t
-	invoke(const char* method_name) {return 0;};
+	invoke(std::string const& method_name) override final;
 
 private:
 	void* runtime_pointer;

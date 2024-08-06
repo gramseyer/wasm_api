@@ -25,14 +25,15 @@ namespace wasm_api
 
 using namespace test;
 
-class MemoryAccessTests : public ::testing::Test {
+class MemoryAccessTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
+
  protected:
   void SetUp() override {
     auto c = load_wasm_from_file("tests/wat/test_set_memory.wasm");
 
     Script s {.data = c->data(), .len = c->size()};
 
-    ctx = std::make_unique<WasmContext>(65536);
+    ctx = std::make_unique<WasmContext>(65536, GetParam());
 
     runtime = ctx->new_runtime_instance(s);
 
@@ -41,13 +42,12 @@ class MemoryAccessTests : public ::testing::Test {
 
   }
 
-
   std::vector<uint8_t> buf;
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
 }; 
 
-TEST_F(MemoryAccessTests, good_memcpy)
+TEST_P(MemoryAccessTests, good_memcpy)
 {
 
 		runtime -> safe_memcpy(0, 10, 4);
@@ -59,40 +59,42 @@ TEST_F(MemoryAccessTests, good_memcpy)
 	
 }
 
-TEST_F(MemoryAccessTests, identical_memcpy)
+TEST_P(MemoryAccessTests, identical_memcpy)
 {
 	EXPECT_ANY_THROW(runtime->safe_memcpy(10, 10, 4));
 }
 
-TEST_F(MemoryAccessTests, small_overlap_dst_before_src)
+TEST_P(MemoryAccessTests, small_overlap_dst_before_src)
 {
 	EXPECT_ANY_THROW(runtime->safe_memcpy(9, 10, 4));
 }
 
-TEST_F(MemoryAccessTests, small_overlap_src_before_dst)
+TEST_P(MemoryAccessTests, small_overlap_src_before_dst)
 {
 	EXPECT_ANY_THROW(runtime->safe_memcpy(10, 9, 4));
 }
 
-TEST_F(MemoryAccessTests, read_from_memory)
+TEST_P(MemoryAccessTests, read_from_memory)
 {
 	std::vector<uint8_t> cmp = runtime -> template load_from_memory<std::vector<uint8_t>>(10, 4);
 	EXPECT_EQ(cmp , buf);
 }
-/*
 
-	SECTION("read fixed size buf")
-	{
-		std::array<uint8_t, 4> arr;
+TEST_P(MemoryAccessTests, read_fixed_size_buf)
+{
+	std::array<uint8_t, 4> arr;
 
-		arr = runtime -> template load_from_memory_to_const_size_buf<decltype(arr)>(10);
+	arr = runtime -> template load_from_memory_to_const_size_buf<decltype(arr)>(10);
 
-		std::vector<uint8_t> cmp;
-		cmp.insert(cmp.end(), arr.begin(), arr.end());
+	std::vector<uint8_t> cmp;
+	cmp.insert(cmp.end(), arr.begin(), arr.end());
 
-		REQUIRE(cmp == buf);
-	}
-} */
+	EXPECT_EQ(cmp, buf);
+}
+
+INSTANTIATE_TEST_SUITE_P(AllEngines, MemoryAccessTests,
+                        ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, wasm_api::SupportedWasmEngine::MAKEPAD_STITCH));
+
 
 
 } /* wasm_api */

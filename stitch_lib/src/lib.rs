@@ -14,9 +14,16 @@ pub struct Stitch_WasmContext {
 
 impl Stitch_WasmContext {
     pub fn new() -> Stitch_WasmContext {
+        println!("create wasmcontext");
         Self {
             engine : Engine::new(),
         }
+    }
+}
+
+impl Drop for Stitch_WasmContext {
+    fn drop(&mut self) {
+        println!("dropping wasmContext");
     }
 }
 
@@ -30,9 +37,13 @@ pub struct Stitch_WasmRuntime {
 
 impl Stitch_WasmRuntime {
     pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8]) -> Stitch_WasmRuntime {
+        println!("what");
         let mut store = Store::new(context.engine.clone());
+        println!("here");
         let module = Module::new(store.engine(), &bytes).unwrap();
+        println!("there");
         let instance = Linker::new().instantiate(&mut store, &module).unwrap();
+        println!("blah");
 
         Self {
             context : context.clone(),
@@ -67,7 +78,6 @@ pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
                 mem : slice.as_mut_ptr(),
                 sz : slice.len() as u32
             }
-            
         },
         _ => {
             MemorySlice {
@@ -110,31 +120,39 @@ pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, by
 
 #[no_mangle]
 pub extern "C" fn new_stitch_context() -> *mut Rc<Stitch_WasmContext> {
-    let out = std::mem::ManuallyDrop::new(
-        Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
+    let b = Box::new(Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
 
-    let o : *mut Rc<Stitch_WasmContext> = &mut ManuallyDrop::into_inner(out);
-    return o;
+    return Box::into_raw(b);
+
+   /* //let mut ctx = Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new());
+    std::mem::forget(b);
+   //     Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
+
+    //let o : *mut Rc<Stitch_WasmContext> = &mut ctx;//ManuallyDrop::into_inner(out);
+    return &mut ctx; */
 }
 
 #[no_mangle]
 pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
-    unsafe { ptr::drop_in_place(p) };
+
+    unsafe { drop(Box::from_raw(p)); }
+    //unsafe { ptr::drop_in_place(p) };
 }
 
 #[no_mangle]
 pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>) -> *mut Stitch_WasmRuntime
 {
+    println!("params {:p} {} {:p}", bytes, bytes_len, context);
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
-    let out = std::mem::ManuallyDrop::new(
-        Stitch_WasmRuntime::new(unsafe {&*context}, &slice));
+    println!("make slice");
 
-    let o : *mut Stitch_WasmRuntime = &mut ManuallyDrop::into_inner(out);
-    return o;
+    let b = Box::new(Stitch_WasmRuntime::new( unsafe {&*context}, &slice));
+
+    return Box::into_raw(b);
 }
 
 #[no_mangle]
 pub extern "C" fn free_stitch_runtime(p : *mut Stitch_WasmRuntime) {
-    unsafe { ptr::drop_in_place(p) };
+    unsafe { drop(Box::from_raw(p)) };
 }
