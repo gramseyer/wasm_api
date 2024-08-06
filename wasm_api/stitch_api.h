@@ -10,6 +10,22 @@ void* new_stitch_runtime(const uint8_t* data, uint32_t size, void* stitch_contex
 void free_stitch_runtime(void* stitch_runtime);
 }
 
+/**
+ * Editorial:
+ * 
+ * The makepad/stitch library appears well-engineered (?)
+ * but has two problems that make it not suited for me.
+ * This has become an exercise in futility, but at least
+ * I learned something about rust and its FFI mechanics.
+ * 
+ * 1) the wasm "stack" is a threadlocal block.  Appropriate
+ * locks are acquired to ensure that each wasm module
+ * executes correctly, but there's no way to ensure
+ * deterministic stack overflows.
+ * 
+ * 2) the library doesn't support error handling within
+ * host functions.
+ */
 
 namespace wasm_api {
 
