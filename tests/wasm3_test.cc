@@ -23,13 +23,12 @@
 #include <cstring>
 
 using namespace wasm_api;
-using namespace test;
 
 TEST(wasm3, call)
 {
 	wasm3::environment e;
 
-	auto c = load_wasm_from_file("tests/wat/test_call_simple.wasm");
+	auto c = ::test::load_wasm_from_file("tests/wat/test_call_simple.wasm");
 
 	auto m = e.parse_module(c->data(), c->size());
 
@@ -47,7 +46,7 @@ TEST(wasm3, call)
 TEST(wasm3, set_memory)
 {
 	wasm3::environment e;
-	auto c = load_wasm_from_file("tests/wat/test_set_memory.wasm");
+	auto c = ::test::load_wasm_from_file("tests/wat/test_set_memory.wasm");
 
 	auto m = e.parse_module(c->data(), c->size());
 

@@ -106,7 +106,8 @@ concept VectorLike
 
 enum class SupportedWasmEngine {
 	WASM3 = 0,
-	MAKEPAD_STITCH = 1
+	MAKEPAD_STITCH = 1,
+	WASMI = 2,
 };
 
 class WasmContext {

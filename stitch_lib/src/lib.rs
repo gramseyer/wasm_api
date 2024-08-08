@@ -243,7 +243,7 @@ impl Stitch_WasmRuntime {
     }
 }
 
-enum InvokeError {
+enum StitchInvokeError {
     None = 0,
     StitchError = 1,
     FuncNExist = 2,
@@ -255,7 +255,7 @@ enum InvokeError {
 }
 
 #[repr(C)]
-pub struct InvokeResult {
+pub struct StitchInvokeResult {
     result : u64,
     error : u32
 }
@@ -267,7 +267,7 @@ pub struct MemorySlice {
 }
 
 #[no_mangle]
-pub extern "C" fn get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
+pub extern "C" fn stitch_get_memory(runtime : *mut Stitch_WasmRuntime) -> MemorySlice
 {
     let r = unsafe { &mut *runtime };
 
@@ -339,7 +339,7 @@ pub extern "C" fn stitch_link_nargs(
 }
 
 #[no_mangle]
-pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, bytes_len : u32) -> InvokeResult
+pub extern "C" fn stitch_invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, bytes_len : u32) -> StitchInvokeResult
 {
     /*
     All I want to do is just catch the panic, return, and promise I'll NEVER EVERY TOUCH THIS MEMORY AGAIN
@@ -368,19 +368,19 @@ pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, by
 
         let string = match std::str::from_utf8(&slice) {
             Ok(v) => v,
-            _ => return InvokeResult { result : 0, error : InvokeError::InputError as u32 }
+            _ => return StitchInvokeResult { result : 0, error : StitchInvokeError::InputError as u32 }
         };
 
         let r = unsafe {&mut *runtime};
 
         match r.lazy_link() {
             Ok(_) => {},
-            Err(_) => { return InvokeResult {result : 0, error : InvokeError::StitchError as u32 }; },
+            Err(_) => { return StitchInvokeResult {result : 0, error : StitchInvokeError::StitchError as u32 }; },
         };
 
         let func = match r.instance.as_mut().expect("lazily linked").exported_func(string) {
             Some(v) => v,
-            _ => { return InvokeResult { result : 0, error : InvokeError::FuncNExist as u32 }; }
+            _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::FuncNExist as u32 }; }
         };
 
         let mut res = [Val::I64(0)];
@@ -388,11 +388,11 @@ pub extern "C" fn invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const u8, by
         match func.call(&mut r.store, &[], &mut res) {
             Ok(_) => { 
                 match res[0].to_i64() {
-                    Some(v) => {return InvokeResult { result : v as u64, error : InvokeError::None as u32 }; },
-                    _ => { return InvokeResult { result : 0, error : InvokeError::ReturnTypeError as u32 }; },
+                    Some(v) => {return StitchInvokeResult { result : v as u64, error : StitchInvokeError::None as u32 }; },
+                    _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::ReturnTypeError as u32 }; },
                 }
             },
-            Err(_) => {return InvokeResult { result : 0, error : InvokeError::WasmError as u32};}
+            Err(_) => {return StitchInvokeResult { result : 0, error : StitchInvokeError::WasmError as u32};}
         };
    /* }) {
         Ok(v) => { return v; },

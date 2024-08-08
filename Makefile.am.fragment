@@ -1,7 +1,10 @@
 
 
 wasm_api_CFLAGS = -I %reldir%/include
-wasm_api_LIBS = %reldir%/stitch_lib/target/release/libstitch_lib.a
+wasm_api_LIBS = \
+	%reldir%/stitch_lib/target/release/libstitch_lib.a \
+	%reldir%/wasmi_lib/target/release/libwasmi_lib.a
+
 
 WASM3_SRCS = \
 	%reldir%/wasm3/source/m3_api_libc.c \
@@ -23,6 +26,7 @@ WASM3_SRCS = \
 WASM_API_SRCS = \
 	%reldir%/wasm_api/wasm_api.cc \
 	%reldir%/wasm_api/wasm3_api.cc \
+	%reldir%/wasm_api/wasmi_api.cc \
 	%reldir%/wasm_api/stitch_api.cc \
 	%reldir%/wasm_api/ffi_trampolines.cc
 
@@ -48,3 +52,6 @@ WASM_API_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
 	cd %reldir%/stitch_lib && \
 	cargo build --release --package stitch_lib
 
+%reldir%/wasmi_lib/target/release/libwasmi_lib.a : %reldir%/wasmi_lib/src/*.rs
+	cd %reldir%/wasmi_lib && \
+	cargo build --release --package wasmi_lib

@@ -1,22 +1,22 @@
-#include "wasm_api/stitch_api.h"
+#include "wasm_api/wasmi_api.h"
 
 #include <utility>
 
 #include "wasm_api/ffi_trampolines.h"
 
-enum class StitchInvokeError : uint32_t
+enum class WasmiInvokeError : uint32_t
 {
     None = 0,
-    StitchError = 1,
+    WasmiError = 1,
     FuncNExist = 2,
     InputError = 3, // input validation fails
     ReturnTypeError = 4,
-    WasmError = 5,
-    CallError = 6,
+    CallError = 5,
+    HostError = 6,
     UnrecoverableSystemError = 7
 };
 
-struct StitchInvokeResult
+struct WasmiInvokeResult
 {
     uint64_t result;
     uint32_t error;
@@ -25,13 +25,13 @@ struct StitchInvokeResult
 extern "C"
 {
 
-    MemorySlice stitch_get_memory(void* runtime_pointer);
+    MemorySlice wasmi_get_memory(void* runtime_pointer);
 
-    StitchInvokeResult stitch_invoke(void* runtime_pointer,
+    WasmiInvokeResult wasmi_invoke(void* runtime_pointer,
                         const uint8_t* method_bytes,
                         const uint32_t method_len);
 
-    void stitch_link_nargs(void* runtime_pointer,
+    void wasmi_link_nargs(void* runtime_pointer,
                            const uint8_t* module_bytes,
                            const uint32_t module_bytes_len,
                            const uint8_t* method_bytes,
@@ -39,83 +39,83 @@ extern "C"
                            void* fn_pointer,
                            uint8_t nargs);
 
-    void* new_stitch_context();
-    void free_stitch_context(void* stitch_context);
-    void* new_stitch_runtime(const uint8_t* data,
+    void* new_wasmi_context();
+    void free_wasmi_context(void* wasmi_context);
+    void* new_wasmi_runtime(const uint8_t* data,
                              uint32_t size,
-                             void* stitch_context,
+                             void* wasmi_context,
                              void* userctx);
-    void free_stitch_runtime(void* stitch_runtime);
+    void free_wasmi_runtime(void* wasmi_runtime);
 }
 
 namespace wasm_api
 {
 
-Stitch_WasmContext::Stitch_WasmContext()
-    : context_pointer(new_stitch_context())
+Wasmi_WasmContext::Wasmi_WasmContext()
+    : context_pointer(new_wasmi_context())
 {}
 
-Stitch_WasmContext::~Stitch_WasmContext()
+Wasmi_WasmContext::~Wasmi_WasmContext()
 {
-    free_stitch_context(context_pointer);
+    free_wasmi_context(context_pointer);
 }
 
-Stitch_WasmRuntime::Stitch_WasmRuntime(Script const& data,
+Wasmi_WasmRuntime::Wasmi_WasmRuntime(Script const& data,
                                        void* context_pointer,
                                        void* userctx)
     : runtime_pointer(
-          new_stitch_runtime(data.data, data.len, context_pointer, userctx))
+          new_wasmi_runtime(data.data, data.len, context_pointer, userctx))
 {}
 
-Stitch_WasmRuntime::~Stitch_WasmRuntime()
+Wasmi_WasmRuntime::~Wasmi_WasmRuntime()
 {
-    free_stitch_runtime(runtime_pointer);
+    free_wasmi_runtime(runtime_pointer);
 }
 
 std::unique_ptr<WasmRuntime>
-Stitch_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
+Wasmi_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
     return std::make_unique<WasmRuntime>(
-        new Stitch_WasmRuntime(contract, context_pointer, ctxp));
+        new Wasmi_WasmRuntime(contract, context_pointer, ctxp));
 }
 
 std::pair<uint8_t*, uint32_t>
-Stitch_WasmRuntime::get_memory()
+Wasmi_WasmRuntime::get_memory()
 {
-    auto slice = ::stitch_get_memory(runtime_pointer);
+    auto slice = ::wasmi_get_memory(runtime_pointer);
     return { slice.mem, slice.size };
 }
 std::pair<const uint8_t*, uint32_t>
-Stitch_WasmRuntime::get_memory() const
+Wasmi_WasmRuntime::get_memory() const
 {
-    auto slice = ::stitch_get_memory(runtime_pointer);
+    auto slice = ::wasmi_get_memory(runtime_pointer);
     return { slice.mem, slice.size };
 }
 
 uint64_t
-Stitch_WasmRuntime::invoke(std::string const& method_name)
+Wasmi_WasmRuntime::invoke(std::string const& method_name)
 {
     auto invoke_res
-        = ::stitch_invoke(runtime_pointer,
+        = ::wasmi_invoke(runtime_pointer,
                    reinterpret_cast<const uint8_t*>(method_name.c_str()),
                    static_cast<uint32_t>(method_name.size()));
-    switch (StitchInvokeError(invoke_res.error))
+    switch (WasmiInvokeError(invoke_res.error))
     {
-        case StitchInvokeError::None:
+        case WasmiInvokeError::None:
             return invoke_res.result;
-        case StitchInvokeError::StitchError:
-            throw UnrecoverableSystemError("internal stitch error");
-        case StitchInvokeError::InputError:
+        case WasmiInvokeError::WasmiError:
+            throw UnrecoverableSystemError("internal wasmi error");
+        case WasmiInvokeError::InputError:
             throw WasmError("invalid input fn name");
-        case StitchInvokeError::FuncNExist:
+        case WasmiInvokeError::FuncNExist:
             throw WasmError("func nexist");
-        case StitchInvokeError::ReturnTypeError:
+        case WasmiInvokeError::ReturnTypeError:
             throw WasmError("output type error");
-        case StitchInvokeError::WasmError:
-            throw WasmError("propagating wasm error");
-        case StitchInvokeError::CallError:
-            throw WasmError("error from call");
-        case StitchInvokeError::UnrecoverableSystemError:
+        case WasmiInvokeError::CallError:
+            throw WasmError("call error");
+        case WasmiInvokeError::HostError:
+            throw WasmError("propagating host error");
+        case WasmiInvokeError::UnrecoverableSystemError:
             throw UnrecoverableSystemError("propagating unrecoverable error");
     }
 
@@ -123,12 +123,12 @@ Stitch_WasmRuntime::invoke(std::string const& method_name)
 }
 
 void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
+Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
                             uint64_t (*f)(void*))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),
@@ -138,12 +138,12 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 }
 
 void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
+Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
                             uint64_t (*f)(void*, uint64_t))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),
@@ -153,12 +153,12 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 }
 
 void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
+Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
                             uint64_t (*f)(void*, uint64_t, uint64_t))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),
@@ -168,12 +168,12 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 }
 
 void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
+Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
                             uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),
@@ -183,13 +183,13 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 }
 
 void
-Stitch_WasmRuntime::link_fn(
+Wasmi_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
     uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),
@@ -199,13 +199,13 @@ Stitch_WasmRuntime::link_fn(
 }
 
 void
-Stitch_WasmRuntime::link_fn(
+Wasmi_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
     uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
-    stitch_link_nargs(runtime_pointer,
+    wasmi_link_nargs(runtime_pointer,
                       (const uint8_t*)module_name.c_str(),
                       module_name.size(),
                       (const uint8_t*)fn_name.c_str(),

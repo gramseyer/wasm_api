@@ -15,6 +15,12 @@ struct TrampolineResult
     uint8_t panic;
 };
 
+struct MemorySlice
+{
+    uint8_t* mem;
+    uint32_t size;
+};
+
 extern "C"
 {
     // trampolines

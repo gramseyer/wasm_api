@@ -93,7 +93,9 @@ TEST_P(MemoryAccessTests, read_fixed_size_buf)
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, MemoryAccessTests,
-                        ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, wasm_api::SupportedWasmEngine::MAKEPAD_STITCH));
+                        ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
+                        	wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
+                        	wasm_api::SupportedWasmEngine::WASMI));
 
 
 
