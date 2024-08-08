@@ -23,7 +23,8 @@ WASM3_SRCS = \
 WASM_API_SRCS = \
 	%reldir%/wasm_api/wasm_api.cc \
 	%reldir%/wasm_api/wasm3_api.cc \
-	%reldir%/wasm_api/stitch_api.cc
+	%reldir%/wasm_api/stitch_api.cc \
+	%reldir%/wasm_api/ffi_trampolines.cc
 
 WASM_API_TEST_CCS = \
 	%reldir%/tests/wasm3_test.cc \
