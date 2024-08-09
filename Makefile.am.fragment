@@ -23,22 +23,23 @@ WASM3_SRCS = \
 	%reldir%/wasm3/source/m3_module.c \
 	%reldir%/wasm3/source/m3_parse.c
 
-WASM_API_SRCS = \
+wasm_api_SRCS = \
+	$(WASM3_SRCS) \
 	%reldir%/wasm_api/wasm_api.cc \
 	%reldir%/wasm_api/wasm3_api.cc \
 	%reldir%/wasm_api/wasmi_api.cc \
 	%reldir%/wasm_api/stitch_api.cc \
 	%reldir%/wasm_api/ffi_trampolines.cc
 
-WASM_API_TEST_CCS = \
+wasm_api_TEST_SRCS = \
 	%reldir%/tests/wasm3_test.cc \
 	%reldir%/tests/mem_test.cc \
 	%reldir%/tests/wasm_api_test.cc \
 	%reldir%/tests/userctx_tests.cc
 
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
-$(WASM_API_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/.
-$(WASM_API_TEST_CCS:.cc=.o) : CXXFLAGS += -I %reldir%/.
+$(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/.
+$(wasm_api_TEST_SRCS:.cc=.o) : CXXFLAGS += -I %reldir%/.
 
 WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_call_simple.wat \
@@ -46,7 +47,7 @@ WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_set_memory.wat \
 	%reldir%/tests/wat/test_invoke.wat
 
-WASM_API_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
+wasm_api_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
 
 %reldir%/stitch_lib/target/release/libstitch_lib.a : %reldir%/stitch_lib/src/*.rs
 	cd %reldir%/stitch_lib && \
