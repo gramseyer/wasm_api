@@ -2,12 +2,8 @@
 
 #include <cstdint>
 
-enum class TrampolineError : uint8_t
+extern "C" 
 {
-    None = 0,
-    HostError = 1,
-    UnrecoverableSystemError = 2
-};
 
 struct TrampolineResult
 {
@@ -21,31 +17,29 @@ struct MemorySlice
     uint32_t size;
 };
 
-extern "C"
-{
     // trampolines
     TrampolineResult c_call_0args(void* function_pointer,
-                                  void* user_ctx) noexcept;
+                                  void* host_call_context) noexcept;
     TrampolineResult c_call_1args(void* function_pointer,
-                                  void* user_ctx,
+                                  void* host_call_context,
                                   uint64_t arg1) noexcept;
     TrampolineResult c_call_2args(void* function_pointer,
-                                  void* user_ctx,
+                                  void* host_call_context,
                                   uint64_t arg1,
                                   uint64_t arg2) noexcept;
     TrampolineResult c_call_3args(void* function_pointer,
-                                  void* user_ctx,
+                                  void* host_call_context,
                                   uint64_t arg1,
                                   uint64_t arg2,
                                   uint64_t arg3) noexcept;
     TrampolineResult c_call_4args(void* function_pointer,
-                                  void* user_ctx,
+                                  void* host_call_context,
                                   uint64_t arg1,
                                   uint64_t arg2,
                                   uint64_t arg3,
                                   uint64_t arg4) noexcept;
     TrampolineResult c_call_5args(void* function_pointer,
-                                  void* user_ctx,
+                                  void* host_call_context,
                                   uint64_t arg1,
                                   uint64_t arg2,
                                   uint64_t arg3,

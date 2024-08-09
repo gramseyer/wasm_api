@@ -13,8 +13,9 @@ pub struct Wasmi_WasmContext {
 
 impl Wasmi_WasmContext {
     pub fn new() -> Wasmi_WasmContext {
+
         Self {
-            engine: Engine::new(&Config::default()),
+            engine: Engine::new(&Config::default().consume_fuel(true).floats(false)),
         }
     }
 }
@@ -32,6 +33,7 @@ pub struct Wasmi_WasmRuntime {
 }
 
 #[allow(dead_code)]
+#[repr(u8)]
 enum TrampolineError {
     None = 0,
     HostError = 1,
@@ -91,8 +93,8 @@ fn handle_trampoline_error(result: TrampolineResult) -> Result<u64, Error> {
     let err: TrampolineError = unsafe { std::mem::transmute(result.panic) };
     match err {
         TrampolineError::None => Ok(result.result),
-        TrampolineError::HostError => Err(Error::new("HostError")),
-        _ => Err(Error::new("UnrecoverableSystemError")),
+        TrampolineError::HostError => { Err(Error::new("HostError")) },
+        _ => { Err(Error::new("UnrecoverableSystemError")) },
     }
 }
 
@@ -338,6 +340,7 @@ enum WasmiInvokeError {
 pub struct WasmiInvokeResult {
     result: u64,
     error: u32,
+    gas_consumed: u64,
 }
 
 #[repr(C)]
@@ -380,6 +383,19 @@ pub extern "C" fn wasmi_get_memory(runtime: *mut Wasmi_WasmRuntime) -> MemorySli
             sz: 0,
         },
     }
+}
+
+#[no_mangle]
+pub extern "C" fn wasmi_consume_gas(runtime: *mut Wasmi_WasmRuntime, gas_consumed: u64) -> bool {
+    let r = unsafe { &mut *runtime };
+
+    let cur_fuel: u64 = r.store.get_fuel().unwrap();
+    if cur_fuel > gas_consumed {
+        r.store.set_fuel(cur_fuel - gas_consumed).unwrap();
+        return false;
+    }
+    r.store.set_fuel(0).unwrap();
+    return true;
 }
 
 fn string_from_parts(bytes: *const u8, len: u32) -> Result<String, Utf8Error> {
@@ -440,6 +456,7 @@ pub extern "C" fn wasmi_invoke(
     runtime: *mut Wasmi_WasmRuntime,
     bytes: *const u8,
     bytes_len: u32,
+    gas_limit: u64,
 ) -> WasmiInvokeResult {
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
@@ -449,6 +466,7 @@ pub extern "C" fn wasmi_invoke(
             return WasmiInvokeResult {
                 result: 0,
                 error: WasmiInvokeError::InputError as u32,
+                gas_consumed: 0,
             }
         }
     };
@@ -461,9 +479,12 @@ pub extern "C" fn wasmi_invoke(
             return WasmiInvokeResult {
                 result: 0,
                 error: WasmiInvokeError::WasmiError as u32,
+                gas_consumed: 0,
             };
         }
     };
+
+    r.store.set_fuel(gas_limit).unwrap();
 
     let func = match r
         .instance
@@ -476,24 +497,31 @@ pub extern "C" fn wasmi_invoke(
             return WasmiInvokeResult {
                 result: 0,
                 error: WasmiInvokeError::FuncNExist as u32,
+                gas_consumed: 0,
             };
         }
     };
 
     let mut res = [Val::I64(0)];
 
-    match func.call(&mut r.store, &[], &mut res) {
+    let func_res = func.call(&mut r.store, &[], &mut res);
+
+    let gas_remaining: u64 = r.store.get_fuel().unwrap();
+
+    match func_res {
         Ok(_) => match res[0].i64() {
             Some(v) => {
                 return WasmiInvokeResult {
                     result: v as u64,
                     error: WasmiInvokeError::None as u32,
+                    gas_consumed: gas_limit - gas_remaining,
                 };
             }
             _ => {
                 return WasmiInvokeResult {
                     result: 0,
                     error: WasmiInvokeError::ReturnTypeError as u32,
+                    gas_consumed: gas_limit - gas_remaining,
                 };
             }
         },
@@ -504,17 +532,20 @@ pub extern "C" fn wasmi_invoke(
                 return WasmiInvokeResult {
                     result: 0,
                     error: WasmiInvokeError::HostError as u32,
+                    gas_consumed: gas_limit - gas_remaining,
                 };
             }
             if errstr == "UnrecoverableSystemError" {
                 return WasmiInvokeResult {
                     result: 0,
                     error: WasmiInvokeError::UnrecoverableSystemError as u32,
+                    gas_consumed: gas_limit - gas_remaining,
                 };
             }
             return WasmiInvokeResult {
                 result: 0,
                 error: WasmiInvokeError::CallError as u32,
+                gas_consumed: gas_limit - gas_remaining,
             };
         }
     };

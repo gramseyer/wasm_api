@@ -43,8 +43,26 @@ constexpr static Script null_script = Script { .data = nullptr, .len = 0 };
 
 class WasmRuntime;
 
+struct HostCallContext {
+	WasmRuntime* runtime = nullptr;
+	void* user_ctx = nullptr;
+};
+
 namespace detail
 {
+
+template<typename T> struct MeteredReturn;
+
+template<>
+struct MeteredReturn<void> {
+	uint64_t consumed_gas = 0;
+};
+
+template<typename T>
+struct MeteredReturn {
+	T out;
+	uint64_t consumed_gas = 0;
+};
 
 class WasmRuntimeImpl;
 class WasmContextImpl {
@@ -64,32 +82,41 @@ public:
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*)) = 0;
+		uint64_t (*f)(HostCallContext*)) = 0;
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t)) = 0;
+		uint64_t (*f)(HostCallContext*, uint64_t)) = 0;
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t)) = 0;
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t)) = 0;
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
 	virtual void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)) = 0;
 
-	virtual uint64_t
-	invoke(std::string const& method_name) = 0;
+	virtual detail::MeteredReturn<uint64_t>
+	invoke(std::string const& method_name, uint64_t gas_limit) = 0;
+
+	virtual void
+	consume_gas(uint64_t gas) = 0;
 
 	virtual ~WasmRuntimeImpl() {}
+protected:
+	WasmRuntimeImpl() = default;
+
+private:
+	WasmRuntimeImpl(WasmRuntimeImpl const&) = delete;
+	WasmRuntimeImpl(WasmRuntimeImpl&&) = delete;
 };
 
 void check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
@@ -143,16 +170,31 @@ class WasmRuntime {
 
 	void _write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t len);
 
+	HostCallContext host_call_context;
+
 public:
+	WasmRuntime(void* ctxp);
+
 	//takes ownership of impl
-	WasmRuntime(detail::WasmRuntimeImpl* impl);
+	void initialize(detail::WasmRuntimeImpl* impl);
+
+	HostCallContext* get_host_call_context() {
+		return &host_call_context;
+	}
 
 	template<typename ret>
-	ret invoke(std::string const& method_name) {
+	detail::MeteredReturn<ret> 
+	invoke(std::string const& method_name, uint64_t gas_limit = UINT64_MAX) {
 		if constexpr (std::is_same<ret, void>::value) {
-			impl -> invoke(method_name);
+			return detail::MeteredReturn<void>{
+				.consumed_gas = impl -> invoke(method_name, gas_limit).consumed_gas
+			};
 		} else {
-			return static_cast<ret>(impl -> invoke(method_name));
+			auto res = impl -> invoke(method_name, gas_limit);
+			return detail::MeteredReturn<ret>{
+				.out = static_cast<ret>(res.out),
+				.consumed_gas = res.consumed_gas
+			};
 		}
 	}
 
@@ -237,6 +279,8 @@ public:
 	uint32_t safe_memcpy(uint32_t dst, uint32_t src, uint32_t len);
 
 	uint32_t safe_strlen(uint32_t start, uint32_t max_len) const;
+
+	void consume_gas(uint64_t gas);
 
 	~WasmRuntime();
 };

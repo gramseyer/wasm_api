@@ -24,25 +24,25 @@ using namespace wasm_api;
 using namespace test;
 
 uint64_t
-throw_runtime_error(void* ctxp)
+throw_runtime_error(HostCallContext* ctxp)
 {
     throw std::runtime_error("bad fn\n");
 }
 
 uint64_t
-throw_host_error(void* ctxp)
+throw_host_error(HostCallContext* ctxp)
 {
     throw wasm_api::HostError("host error\n");
 }
 
 uint64_t
-throw_bad_alloc(void* ctxp)
+throw_bad_alloc(HostCallContext* ctxp)
 {
     throw std::bad_alloc();
 }
 
 uint64_t
-good_call(void* ctxp)
+good_call(HostCallContext* ctxp)
 { 
     return 0;
 }
@@ -51,7 +51,7 @@ static WasmRuntime* s_runtime;
 static bool reentrance_hit = false;
 
 uint64_t
-reentrance(void* ctxp)
+reentrance(HostCallContext* ctxp)
 {
     reentrance_hit = true;
     s_runtime->template invoke<void>("unreachable");

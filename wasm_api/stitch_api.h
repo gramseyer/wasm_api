@@ -59,28 +59,31 @@ public:
 
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*));
+                 uint64_t (*f)(HostCallContext*));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t));
     void link_fn(
         std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
+        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
 
-    uint64_t invoke(std::string const& method_name) override final;
+    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name, uint64_t gas_limit) override final;
+
+    void consume_gas(uint64_t gas);
 
 private:
     void* runtime_pointer;
+    uint64_t available_gas = 0;
 };
 
 } // namespace wasm_api

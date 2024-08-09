@@ -33,7 +33,7 @@ class Wasmi_WasmRuntime : public detail::WasmRuntimeImpl
 public:
     Wasmi_WasmRuntime(Script const& data,
                        void* context_pointer,
-                       void* userctx);
+                       HostCallContext* host_call_context);
 
     ~Wasmi_WasmRuntime();
 
@@ -42,25 +42,28 @@ public:
 
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*));
+                 uint64_t (*f)(HostCallContext*));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t));
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t));
     void link_fn(
         std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
+        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
 
-    uint64_t invoke(std::string const& method_name) override final;
+    detail::MeteredReturn<uint64_t>
+    invoke(std::string const& method_name, uint64_t gas_limit) override final;
+
+    void consume_gas(uint64_t gas) override;
 
 private:
     void* runtime_pointer;

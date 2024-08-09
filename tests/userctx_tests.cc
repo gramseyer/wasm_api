@@ -27,9 +27,9 @@ using namespace test;
 
 void* ctx_check = (void*) (0xAABBCCDD'EEFF0011);
 
-uint64_t foo(void* ctx, uint64_t value)
+uint64_t foo(HostCallContext* ctx, uint64_t value)
 {
-	EXPECT_TRUE(ctx == ctx_check);
+	EXPECT_TRUE(ctx->user_ctx == ctx_check);
 	EXPECT_TRUE(value == 12);
 	return 15;
 }
@@ -57,7 +57,7 @@ uint32_t expect = 0;
 
 TEST_P(UserCtxTests, check_userctx_correct)
 {
-	EXPECT_EQ(runtime->template invoke<uint32_t>("calltest"), 15u);
+	EXPECT_EQ(runtime->template invoke<uint32_t>("calltest").out, 15u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, UserCtxTests,

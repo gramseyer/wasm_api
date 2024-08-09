@@ -50,6 +50,8 @@ class Wasm3_WasmRuntime : public detail::WasmRuntimeImpl {
 	std::unique_ptr<wasm3::runtime> runtime;
 	std::unique_ptr<wasm3::module> module;
 
+	uint64_t available_gas = 0;
+
 public:
 
 	std::pair<uint8_t*, uint32_t> get_memory() override
@@ -62,50 +64,47 @@ public:
 		return runtime->get_memory();
 	}
 
-	Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r, std::unique_ptr<wasm3::module> m)
-		: runtime(std::move(r))
-		, module(std::move(m))
-		{}
+	Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r, std::unique_ptr<wasm3::module> m);
 
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*)) 
+		uint64_t (*f)(HostCallContext*)) 
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t))
+		uint64_t (*f)(HostCallContext*, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t))
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
 	void link_fn(
 		std::string const& module_name,
 		std::string const& fn_name,
-		uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
+		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
 	{
 		_link_fn(module_name, fn_name, f);
 	}
@@ -119,8 +118,13 @@ public:
 		module->link_optional(module_name.c_str(), fn_name.c_str(), f);
 	}
 
-	uint64_t
-	invoke(std::string const& method_name) override;
+	detail::MeteredReturn<uint64_t>
+	invoke(std::string const& method_name, uint64_t gas_limit) override;
+
+	// This version of WasmRuntime requires the wasm to be instrumented
+	// with calls to a "consume gas" function.  Host functions
+	// should also call into this, as necessary.
+	void consume_gas(uint64_t gas) override;
 };
 
 } /* wasm_api */

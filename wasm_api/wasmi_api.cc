@@ -20,6 +20,7 @@ struct WasmiInvokeResult
 {
     uint64_t result;
     uint32_t error;
+    uint64_t gas_remaining;
 };
 
 extern "C"
@@ -29,7 +30,12 @@ extern "C"
 
     WasmiInvokeResult wasmi_invoke(void* runtime_pointer,
                         const uint8_t* method_bytes,
-                        const uint32_t method_len);
+                        const uint32_t method_len,
+                        uint64_t gas_limit);
+
+    // return true if out of gas -- i.e. should shortcircuit rest of host function
+    bool wasmi_consume_gas(void* runtime_pointer,
+        uint64_t gas_to_consume);
 
     void wasmi_link_nargs(void* runtime_pointer,
                            const uint8_t* module_bytes,
@@ -62,9 +68,9 @@ Wasmi_WasmContext::~Wasmi_WasmContext()
 
 Wasmi_WasmRuntime::Wasmi_WasmRuntime(Script const& data,
                                        void* context_pointer,
-                                       void* userctx)
+                                       HostCallContext* userctx)
     : runtime_pointer(
-          new_wasmi_runtime(data.data, data.len, context_pointer, userctx))
+          new_wasmi_runtime(data.data, data.len, context_pointer, (void*)userctx))
 {}
 
 Wasmi_WasmRuntime::~Wasmi_WasmRuntime()
@@ -75,8 +81,13 @@ Wasmi_WasmRuntime::~Wasmi_WasmRuntime()
 std::unique_ptr<WasmRuntime>
 Wasmi_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
-    return std::make_unique<WasmRuntime>(
-        new Wasmi_WasmRuntime(contract, context_pointer, ctxp));
+    std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
+
+    Wasmi_WasmRuntime* wasmi_runtime = new Wasmi_WasmRuntime(contract, context_pointer, out -> get_host_call_context());
+
+    out -> initialize(wasmi_runtime);
+
+    return out;
 }
 
 std::pair<uint8_t*, uint32_t>
@@ -92,17 +103,18 @@ Wasmi_WasmRuntime::get_memory() const
     return { slice.mem, slice.size };
 }
 
-uint64_t
-Wasmi_WasmRuntime::invoke(std::string const& method_name)
+detail::MeteredReturn<uint64_t>
+Wasmi_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
 {
     auto invoke_res
         = ::wasmi_invoke(runtime_pointer,
                    reinterpret_cast<const uint8_t*>(method_name.c_str()),
-                   static_cast<uint32_t>(method_name.size()));
+                   static_cast<uint32_t>(method_name.size()),
+                   gas_limit);
     switch (WasmiInvokeError(invoke_res.error))
     {
         case WasmiInvokeError::None:
-            return invoke_res.result;
+            return {invoke_res.result, gas_limit - invoke_res.gas_remaining};
         case WasmiInvokeError::WasmiError:
             throw UnrecoverableSystemError("internal wasmi error");
         case WasmiInvokeError::InputError:
@@ -123,9 +135,18 @@ Wasmi_WasmRuntime::invoke(std::string const& method_name)
 }
 
 void
+Wasmi_WasmRuntime::consume_gas(uint64_t gas)
+{
+    if (wasmi_consume_gas(runtime_pointer, gas))
+    {
+        throw WasmError("gas limit exceeded");
+    }
+}
+
+void
 Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*))
+                            uint64_t (*f)(HostCallContext*))
 {
 
     wasmi_link_nargs(runtime_pointer,
@@ -140,7 +161,7 @@ Wasmi_WasmRuntime::link_fn(std::string const& module_name,
 void
 Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t))
 {
 
     wasmi_link_nargs(runtime_pointer,
@@ -155,7 +176,7 @@ Wasmi_WasmRuntime::link_fn(std::string const& module_name,
 void
 Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t, uint64_t))
 {
 
     wasmi_link_nargs(runtime_pointer,
@@ -170,7 +191,7 @@ Wasmi_WasmRuntime::link_fn(std::string const& module_name,
 void
 Wasmi_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t))
 {
 
     wasmi_link_nargs(runtime_pointer,
@@ -186,7 +207,7 @@ void
 Wasmi_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
-    uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
+    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
     wasmi_link_nargs(runtime_pointer,
@@ -202,7 +223,7 @@ void
 Wasmi_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
-    uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
+    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
     wasmi_link_nargs(runtime_pointer,

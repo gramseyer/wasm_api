@@ -60,6 +60,13 @@ SOFTWARE.
 
 #include "wasm3/source/wasm3.h"
 
+namespace wasm_api
+{
+
+class HostCallContext;
+
+}
+
 namespace wasm3 {
     /** @cond */
     namespace detail {
@@ -126,12 +133,12 @@ namespace wasm3 {
         struct wrap_helper;
 
         template <typename Ret, typename ...Args>
-        struct wrap_helper<Ret(void*, Args...)> {
-            using Func = Ret(void*, Args...);
+        struct wrap_helper<Ret(wasm_api::HostCallContext*, Args...)> {
+            using Func = Ret(wasm_api::HostCallContext*, Args...);
             static const void *wrap_fn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type mem) {
                  
                 using base_tuple_t = std::tuple<Args...>;
-                using aug_tuple_t = std::tuple<void*, Args...>;
+                using aug_tuple_t = std::tuple<wasm_api::HostCallContext*, Args...>;
 
                 base_tuple_t args;
 
@@ -141,7 +148,7 @@ namespace wasm3 {
                 get_args_from_stack(_sp, mem, args);
                 Func* function = reinterpret_cast<Func*>(_ctx->userdata);
                 try {
-                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<void*>(m3_GetUserData(rt)), args);
+                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<wasm_api::HostCallContext*>(reinterpret_cast<wasm_api::HostCallContext*>(m3_GetUserData(rt))), args);
                     Ret r = std::apply(function, aug_args);
                     m3ApiReturn(r);
                 } 
@@ -162,20 +169,20 @@ namespace wasm3 {
         };
 
         template <typename ...Args>
-        struct wrap_helper<void(void*, Args...)> {
+        struct wrap_helper<void(wasm_api::HostCallContext*, Args...)> {
+            using Func = void(wasm_api::HostCallContext*, Args...);
             static const void *wrap_fn(IM3Runtime rt, IM3ImportContext _ctx, stack_type sp, mem_type mem) {
                 
                 using base_tuple_t = std::tuple<Args...>;
-                using aug_tuple_t = std::tuple<void*, Args...>;
+                using aug_tuple_t = std::tuple<wasm_api::HostCallContext*, Args...>;
 
                 base_tuple_t args;
                 get_args_from_stack(sp, mem, args);
 
-                using Func = void(void*, Args...);
 
                 try {
                     Func* function = reinterpret_cast<Func*>(_ctx->userdata);
-                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<void*>(m3_GetUserData(rt)), args);
+                    aug_tuple_t aug_args = std::tuple_cat(std::tuple<wasm_api::HostCallContext*>(reinterpret_cast<wasm_api::HostCallContext*>(m3_GetUserData(rt))), args);
                     std::apply(function, aug_args);
                     m3ApiSuccess();
                 } catch (wasm_api::HostError& e)
@@ -196,30 +203,30 @@ namespace wasm3 {
         class m3_wrapper;
 
         template<typename Ret, typename ... Args>
-        class m3_wrapper<Ret(void*, Args...)> {
+        class m3_wrapper<Ret(wasm_api::HostCallContext*, Args...)> {
         public:
             static M3Result link(IM3Module io_module,
                                  const char *const i_moduleName,
                                  const char *const i_functionName,
-                                 Ret (*function)(void*, Args...)) {
+                                 Ret (*function)(wasm_api::HostCallContext*, Args...)) {
 
                 return m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
                                             m3_signature<Ret, Args...>::value,
-                                            &wrap_helper<Ret(void*, Args...)>::wrap_fn,
+                                            &wrap_helper<Ret(wasm_api::HostCallContext*, Args...)>::wrap_fn,
                                             reinterpret_cast<void*>(function));
             }
         };
         template<typename ... Args>
-        class m3_wrapper<void(void*, Args...)> {
+        class m3_wrapper<void(wasm_api::HostCallContext*, Args...)> {
         public:
             static M3Result link(IM3Module io_module,
                                  const char *const i_moduleName,
                                  const char *const i_functionName,
-                                 void (*function)(void*, Args...)) {
+                                 void (*function)(wasm_api::HostCallContext*, Args...)) {
 
                 return m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
                                             m3_signature<void, Args...>::value,
-                                            &wrap_helper<void(void*, Args...)>::wrap_fn,
+                                            &wrap_helper<void(wasm_api::HostCallContext*, Args...)>::wrap_fn,
                                             reinterpret_cast<void*>(function));
             }
         };
@@ -368,17 +375,17 @@ namespace wasm3 {
          * @param function  Function to link (a function pointer)
          */
         template<typename ret, typename...Args>
-        void link(const char *module, const char *function_name, ret (*function)(void*, Args...));
+        void link(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
         template<typename...Args>
-        void link(const char *module, const char *function_name, void (*function)(void*, Args...));
+        void link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
 
         /**
          * Same as module::link, but doesn't throw an exception if the function is not referenced.
          */
         template<typename ret, typename...Args>
-        void link_optional(const char *module, const char *function_name, ret (*function)(void*, Args...));
+        void link_optional(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
         template<typename...Args>
-        void link_optional(const char *module, const char *function_name, void (*function)(void*, Args...));
+        void link_optional(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
 
         ~module()
         {
@@ -563,21 +570,21 @@ namespace wasm3 {
     }
 
     template<typename R, typename... Args>
-    void module::link(const char *module, const char *function_name, R (*function)(void*, Args...)) {
-        using Func = R(void*, Args...);
+    void module::link(const char *module, const char *function_name, R (*function)(wasm_api::HostCallContext*, Args...)) {
+        using Func = R(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         detail::check_error(ret);
     }
     template<typename... Args>
-    void module::link(const char *module, const char *function_name, void (*function)(void*, Args...)) {
-        using Func = void(void*, Args...);
+    void module::link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...)) {
+        using Func = void(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         detail::check_error(ret);
     }
 
     template<typename R, typename... Args>
-    void module::link_optional(const char *module, const char *function_name, R(*function)(void*, Args...)) {
-        using Func = R(void*, Args...);
+    void module::link_optional(const char *module, const char *function_name, R(*function)(wasm_api::HostCallContext*, Args...)) {
+        using Func = R(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         if (ret == m3Err_functionLookupFailed) {
             return;
@@ -586,8 +593,8 @@ namespace wasm3 {
     }
 
     template<typename... Args>
-    void module::link_optional(const char *module, const char *function_name, void(*function)(void*, Args...)) {
-        using Func = void(void*, Args...);
+    void module::link_optional(const char *module, const char *function_name, void(*function)(wasm_api::HostCallContext*, Args...)) {
+        using Func = void(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
         if (ret == m3Err_functionLookupFailed) {
             return;

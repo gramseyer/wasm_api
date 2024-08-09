@@ -61,9 +61,19 @@ WasmContext::~WasmContext()
     impl = nullptr;
 }
 
-WasmRuntime::WasmRuntime(detail::WasmRuntimeImpl* impl)
-		: impl(impl)
-		{}
+WasmRuntime::WasmRuntime(void* ctxp)
+    : impl(nullptr)
+    , host_call_context(this, ctxp)
+    {}
+
+void
+WasmRuntime::initialize(detail::WasmRuntimeImpl* i)
+{
+    if (impl != nullptr) {
+        throw std::runtime_error("double initialize");
+    }
+    impl = i;
+}
 
 
 WasmRuntime::~WasmRuntime()
@@ -152,6 +162,11 @@ WasmRuntime::_write_to_memory(const uint8_t* src_ptr, uint32_t offset, uint32_t 
 	detail::check_bounds(mlen, offset, len);
 
 	std::memcpy(mem + offset, src_ptr, len);
+}
+
+void
+WasmRuntime::consume_gas(uint64_t gas) {
+    impl -> consume_gas(gas);
 }
 
 namespace detail

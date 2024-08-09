@@ -75,8 +75,13 @@ Stitch_WasmRuntime::~Stitch_WasmRuntime()
 std::unique_ptr<WasmRuntime>
 Stitch_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
-    return std::make_unique<WasmRuntime>(
-        new Stitch_WasmRuntime(contract, context_pointer, ctxp));
+    std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
+
+    auto* stitch_runtime = new Stitch_WasmRuntime(contract, context_pointer, out -> get_host_call_context());
+
+    out -> initialize(stitch_runtime);
+
+    return out;
 }
 
 std::pair<uint8_t*, uint32_t>
@@ -92,9 +97,10 @@ Stitch_WasmRuntime::get_memory() const
     return { slice.mem, slice.size };
 }
 
-uint64_t
-Stitch_WasmRuntime::invoke(std::string const& method_name)
+detail::MeteredReturn<uint64_t>
+Stitch_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
 {
+    available_gas = gas_limit;
     auto invoke_res
         = ::stitch_invoke(runtime_pointer,
                    reinterpret_cast<const uint8_t*>(method_name.c_str()),
@@ -102,7 +108,7 @@ Stitch_WasmRuntime::invoke(std::string const& method_name)
     switch (StitchInvokeError(invoke_res.error))
     {
         case StitchInvokeError::None:
-            return invoke_res.result;
+            return {invoke_res.result, gas_limit - available_gas};
         case StitchInvokeError::StitchError:
             throw UnrecoverableSystemError("internal stitch error");
         case StitchInvokeError::InputError:
@@ -125,7 +131,7 @@ Stitch_WasmRuntime::invoke(std::string const& method_name)
 void
 Stitch_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*))
+                            uint64_t (*f)(HostCallContext*))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -140,7 +146,7 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 void
 Stitch_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -155,7 +161,7 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 void
 Stitch_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t, uint64_t))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -170,7 +176,7 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
 void
 Stitch_WasmRuntime::link_fn(std::string const& module_name,
                             std::string const& fn_name,
-                            uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t))
+                            uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -186,7 +192,7 @@ void
 Stitch_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
-    uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t))
+    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -202,7 +208,7 @@ void
 Stitch_WasmRuntime::link_fn(
     std::string const& module_name,
     std::string const& fn_name,
-    uint64_t (*f)(void*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
+    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
 {
 
     stitch_link_nargs(runtime_pointer,
@@ -213,5 +219,16 @@ Stitch_WasmRuntime::link_fn(
                       (void*)f,
                       5);
 }
+
+void
+Stitch_WasmRuntime::consume_gas(uint64_t gas)
+{
+    if (gas > available_gas) {
+        available_gas = 0;
+        throw WasmError("gas limit exceeded");
+    }
+    available_gas -= gas;
+}
+
 
 } // namespace wasm_api
