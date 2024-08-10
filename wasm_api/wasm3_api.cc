@@ -14,67 +14,70 @@
  * limitations under the License.
  */
 
-
-
 #include "wasm_api/wasm3_api.h"
 
 namespace wasm_api
 {
 
- 
-Wasm3_WasmRuntime::Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r, std::unique_ptr<wasm3::module> m)
-	: runtime(std::move(r))
-	, module(std::move(m))
-	{}
+Wasm3_WasmRuntime::Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r,
+                                     std::unique_ptr<wasm3::module> m)
+    : runtime(std::move(r))
+    , module(std::move(m))
+    , available_gas(0)
+{}
 
-std::unique_ptr<WasmRuntime> 
+std::unique_ptr<WasmRuntime>
 Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
-	if (contract.data == nullptr)
-	{
-		throw UnrecoverableSystemError("invalid nullptr passed to wasm3_wasmcontext");
-	}
+    if (contract.data == nullptr)
+    {
+        throw UnrecoverableSystemError(
+            "invalid nullptr passed to wasm3_wasmcontext");
+    }
 
-	WasmRuntime* out = new WasmRuntime(ctxp);
+    WasmRuntime* out = new WasmRuntime(ctxp);
 
-	auto module = env.parse_module(contract.data, contract.len);
+    auto module = env.parse_module(contract.data, contract.len);
 
-	auto runtime = env.new_runtime(MAX_STACK_BYTES, out -> get_host_call_context());
+    auto runtime
+        = env.new_runtime(MAX_STACK_BYTES, out->get_host_call_context());
 
-	runtime->load(*module);
+    runtime->load(*module);
 
-	Wasm3_WasmRuntime* new_runtime = new Wasm3_WasmRuntime(std::move(runtime), std::move(module));
+    Wasm3_WasmRuntime* new_runtime
+        = new Wasm3_WasmRuntime(std::move(runtime), std::move(module));
 
-	out -> initialize(new_runtime);
+    out->initialize(new_runtime);
 
-	return std::unique_ptr<WasmRuntime>(out);
+    return std::unique_ptr<WasmRuntime>(out);
 }
 
 detail::MeteredReturn<uint64_t>
 Wasm3_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
 {
-	auto fn = runtime->find_function(method_name.c_str());
-	available_gas = gas_limit;
+    auto fn = runtime->find_function(method_name.c_str());
+    available_gas = gas_limit;
 
-	auto res = fn.template call<uint64_t>();
+    auto res = fn.template call<uint64_t>();
 
-	return {res, gas_limit - available_gas};
+    return { res, gas_limit - available_gas };
 }
 
 void
 Wasm3_WasmRuntime::consume_gas(uint64_t gas)
 {
-	if (gas > available_gas) {
-		available_gas = 0;
-		throw WasmError("gas limit exceeded");
-	}
-	available_gas -= gas;
+    if (gas > available_gas)
+    {
+        available_gas = 0;
+        throw WasmError("gas limit exceeded");
+    }
+    available_gas -= gas;
 }
 
 uint64_t
-Wasm3_WasmRuntime::get_available_gas() const {
-	return available_gas;
+Wasm3_WasmRuntime::get_available_gas() const
+{
+    return available_gas;
 }
 
-
-} /* wasm_api */
+} // namespace wasm_api

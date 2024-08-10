@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 
-
-
 #include <stdexcept>
 
 namespace wasm_api
@@ -27,7 +25,7 @@ namespace wasm_api
 // throw HostError
 struct HostError : public std::runtime_error
 {
-	using std::runtime_error::runtime_error;
+    using std::runtime_error::runtime_error;
 };
 
 // Thrown by Wasm API if there's some issue
@@ -35,12 +33,12 @@ struct HostError : public std::runtime_error
 // including when there's an error in a nested call
 struct WasmError : public HostError
 {
-	using HostError::HostError;
+    using HostError::HostError;
 };
 
 struct UnrecoverableSystemError : public std::runtime_error
 {
-	using std::runtime_error::runtime_error;
+    using std::runtime_error::runtime_error;
 };
 
-} /* wasm_api */
+} // namespace wasm_api

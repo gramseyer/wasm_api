@@ -6,7 +6,7 @@
 
 constexpr static uint8_t TrampolineError_NONE = 0;
 constexpr static uint8_t TrampolineError_HOSTERROR = 1;
-constexpr static uint8_t TrampolineError_UNRECOVERABLE = 2; 
+constexpr static uint8_t TrampolineError_UNRECOVERABLE = 2;
 
 namespace detail
 {

@@ -26,10 +26,6 @@ class Stitch_WasmRuntime;
 
 class Stitch_WasmContext : public detail::WasmContextImpl
 {
-
-    Stitch_WasmContext(Stitch_WasmContext&) = delete;
-    Stitch_WasmContext(Stitch_WasmContext&&) = delete;
-
 public:
     Stitch_WasmContext();
 
@@ -44,9 +40,6 @@ private:
 
 class Stitch_WasmRuntime : public detail::WasmRuntimeImpl
 {
-    Stitch_WasmRuntime(Stitch_WasmRuntime&) = delete;
-    Stitch_WasmRuntime(Stitch_WasmRuntime&&) = delete;
-
 public:
     Stitch_WasmRuntime(Script const& data,
                        void* context_pointer,
@@ -54,30 +47,40 @@ public:
 
     ~Stitch_WasmRuntime();
 
-    std::pair<uint8_t*, uint32_t> get_memory() override final;
-    std::pair<const uint8_t*, uint32_t> get_memory() const override final;
+    std::pair<uint8_t*, uint32_t> get_memory() override;
+    std::pair<const uint8_t*, uint32_t> get_memory() const override;
 
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*));
+                 uint64_t (*f)(HostCallContext*)) override;
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t)) override;
     void link_fn(std::string const& module_name,
                  std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t));
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t));
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t));
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) override;
     void link_fn(
         std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t));
+        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) override;
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t)) override;
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t)) override;
 
-    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name, uint64_t gas_limit) override final;
+    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
+                                           uint64_t gas_limit) override;
 
     void consume_gas(uint64_t gas) override;
     uint64_t get_available_gas() const override;

@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 #include "wasm_api/wasm_api.h"
 
 #include "wasm_api/wasm3.h"
@@ -26,107 +25,110 @@ namespace wasm_api
 
 class Wasm3_WasmRuntime;
 
-class Wasm3_WasmContext : public detail::WasmContextImpl {
-
-	wasm3::environment env;
-
-	const uint32_t MAX_STACK_BYTES;
-
+class Wasm3_WasmContext : public detail::WasmContextImpl
+{
 public:
-	using runtime_t = Wasm3_WasmRuntime;
+    using runtime_t = Wasm3_WasmRuntime;
 
-	Wasm3_WasmContext(uint32_t MAX_STACK_BYTES)
-		: env()
-		, MAX_STACK_BYTES(MAX_STACK_BYTES)
-		{
-		}
+    Wasm3_WasmContext(uint32_t MAX_STACK_BYTES)
+        : env()
+        , MAX_STACK_BYTES(MAX_STACK_BYTES)
+    {}
 
-	std::unique_ptr<WasmRuntime>
-	new_runtime_instance(Script const& contract, void* ctxp) override;
+    std::unique_ptr<WasmRuntime> new_runtime_instance(Script const& contract,
+                                                      void* ctxp) override;
+
+private:
+    wasm3::environment env;
+    const uint32_t MAX_STACK_BYTES;
 };
 
-class Wasm3_WasmRuntime : public detail::WasmRuntimeImpl {
-
-	std::unique_ptr<wasm3::runtime> runtime;
-	std::unique_ptr<wasm3::module> module;
-
-	uint64_t available_gas = 0;
-
+class Wasm3_WasmRuntime : public detail::WasmRuntimeImpl
+{
 public:
+    Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r,
+                      std::unique_ptr<wasm3::module> m);
 
-	std::pair<uint8_t*, uint32_t> get_memory() override
-	{
-		return runtime->get_memory();
-	}
+    std::pair<uint8_t*, uint32_t> get_memory() override
+    {
+        return runtime->get_memory();
+    }
 
-	std::pair<const uint8_t*, uint32_t> get_memory() const override
-	{
-		return runtime->get_memory();
-	}
+    std::pair<const uint8_t*, uint32_t> get_memory() const override
+    {
+        return runtime->get_memory();
+    }
 
-	Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r, std::unique_ptr<wasm3::module> m);
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    }
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*, uint64_t)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    }
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    }
+    void link_fn(
+        std::string const& module_name,
+        std::string const& fn_name,
+        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    }
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    }
+    void link_fn(std::string const& module_name,
+                 std::string const& fn_name,
+                 uint64_t (*f)(HostCallContext*,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t,
+                               uint64_t)) override
+    {
+        _link_fn(module_name, fn_name, f);
+    };
 
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*)) 
-	{
-		_link_fn(module_name, fn_name, f);
-	}
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*, uint64_t))
-	{
-		_link_fn(module_name, fn_name, f);
-	}
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t))
-	{
-		_link_fn(module_name, fn_name, f);
-	}
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t))
-	{
-		_link_fn(module_name, fn_name, f);
-	}
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t))
-	{
-		_link_fn(module_name, fn_name, f);
-	}
-	void link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t))
-	{
-		_link_fn(module_name, fn_name, f);
-	}
+    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
+                                           uint64_t gas_limit) override;
 
-	template<typename ...Args>
-	void _link_fn(
-		std::string const& module_name,
-		std::string const& fn_name,
-		auto (*f)(Args...))
-	{
-		module->link_optional(module_name.c_str(), fn_name.c_str(), f);
-	}
+    // This version of WasmRuntime requires the wasm to be instrumented
+    // with calls to a "consume gas" function.  Host functions
+    // should also call into this, as necessary.
+    void consume_gas(uint64_t gas) override;
 
-	detail::MeteredReturn<uint64_t>
-	invoke(std::string const& method_name, uint64_t gas_limit) override;
+    uint64_t get_available_gas() const override;
 
-	// This version of WasmRuntime requires the wasm to be instrumented
-	// with calls to a "consume gas" function.  Host functions
-	// should also call into this, as necessary.
-	void consume_gas(uint64_t gas) override;
+private:
+    std::unique_ptr<wasm3::runtime> runtime;
+    std::unique_ptr<wasm3::module> module;
 
-	uint64_t get_available_gas() const override;
+    uint64_t available_gas;
+
+    template<typename... Args>
+    void _link_fn(std::string const& module_name,
+                  std::string const& fn_name,
+                  auto (*f)(Args...))
+    {
+        module->link_optional(module_name.c_str(), fn_name.c_str(), f);
+    }
 };
 
-} /* wasm_api */
+} // namespace wasm_api

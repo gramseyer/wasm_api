@@ -2,20 +2,19 @@
 
 #include <cstdint>
 
-extern "C" 
+extern "C"
 {
+    struct TrampolineResult
+    {
+        uint64_t result;
+        uint8_t panic;
+    };
 
-struct TrampolineResult
-{
-    uint64_t result;
-    uint8_t panic;
-};
-
-struct MemorySlice
-{
-    uint8_t* mem;
-    uint32_t size;
-};
+    struct MemorySlice
+    {
+        uint8_t* mem;
+        uint32_t size;
+    };
 
     // trampolines
     TrampolineResult c_call_0args(void* function_pointer,
