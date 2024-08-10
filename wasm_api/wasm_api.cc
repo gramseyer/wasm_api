@@ -167,6 +167,23 @@ WasmRuntime::_write_to_memory(const uint8_t* src_ptr,
     std::memcpy(mem + offset, src_ptr, len);
 }
 
+bool 
+WasmRuntime::_write_to_memory_noexcept(
+    const uint8_t* src_ptr,
+    uint32_t offset,
+    uint32_t len) noexcept
+{
+    auto [mem, mlen] = get_memory();
+
+    if (detail::check_bounds_noexcept(mlen, offset, len))
+    {
+        std::memcpy(mem + offset, src_ptr, len);
+        return true;
+    }
+    return false;
+
+}
+
 void
 WasmRuntime::consume_gas(uint64_t gas)
 {
@@ -193,6 +210,18 @@ check_bounds(uint32_t mlen, uint32_t offset, uint32_t len)
                         + " offset = " + std::to_string(offset)
                         + " len = " + std::to_string(len));
     }
+}
+
+bool 
+check_bounds_noexcept(uint32_t mlen, uint32_t offset, uint32_t len) noexcept
+{
+    if (__builtin_add_overflow_p(
+            offset, len, static_cast<uint32_t>(0)) // overflow
+        || (mlen < offset + len))
+    {
+        return false;
+    }
+    return true;
 }
 
 } // namespace detail

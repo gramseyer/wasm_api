@@ -141,6 +141,11 @@ private:
 void
 check_bounds(uint32_t mlen, uint32_t offset, uint32_t len);
 
+bool
+__attribute__((warn_unused_result))
+check_bounds_noexcept(uint32_t mlen, uint32_t offset, uint32_t len) noexcept;
+
+
 template<typename T>
 concept VectorLike = requires(const T object) {
     object.data();
@@ -251,6 +256,17 @@ public:
     }
 
     template<detail::VectorLike V>
+    bool
+    __attribute__((warn_unused_result))
+    write_to_memory_noexcept(V const& array, uint32_t offset, uint32_t max_len) noexcept
+    {
+        uint32_t write_len = std::min<uint32_t>(max_len, array.size());
+
+        return _write_to_memory_noexcept(array.data(), offset, write_len);
+    }
+
+
+    template<detail::VectorLike V>
     void write_slice_to_memory(V const& array,
                                uint32_t offset,
                                uint32_t slice_start,
@@ -288,6 +304,8 @@ public:
 
     uint32_t safe_strlen(uint32_t start, uint32_t max_len) const;
 
+    // TODO: caller must be careful with reentrance on a WasmRuntime
+    // when managing gas consumption
     void consume_gas(uint64_t gas);
 
     uint64_t get_available_gas() const;
@@ -304,6 +322,13 @@ private:
     void _write_to_memory(const uint8_t* src_ptr,
                           uint32_t offset,
                           uint32_t len);
+
+    // true on success
+    bool 
+    __attribute__((warn_unused_result))
+    _write_to_memory_noexcept(const uint8_t* src_ptr,
+    	uint32_t offset,
+    	uint32_t len) noexcept;
 
     WasmRuntime(const WasmRuntime&) = delete;
     WasmRuntime(WasmRuntime&&) = delete;
