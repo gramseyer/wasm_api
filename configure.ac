@@ -15,7 +15,7 @@
 #
 
 AC_INIT([wasm_api],[0])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([subdir-objects foreign])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -33,7 +33,7 @@ AS_IF([test -z "${WFLAGS+set}"], AX_APPEND_COMPILE_FLAGS([-Wall], WFLAGS))
 
 PKG_PROG_PKG_CONFIG
 
-PKG_CHECK_MODULES([Catch2], [catch2])
+PKG_CHECK_MODULES([gtest], [gtest])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile wasm_api.pc wasm_api-uninstalled.pc])

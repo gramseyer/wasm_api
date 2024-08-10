@@ -28,17 +28,20 @@ pkginclude_HEADERS = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = wasm_api.pc
 
-libwasmapi_a_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS)
+libwasmapi_a_SOURCES = $(wasm_api_SRCS)
 
-test_SOURCES = $(WASM3_SRCS) $(WASM_API_SRCS) $(WASM_API_TEST_CCS) test.cc
+test_SOURCES = $(wasm_api_SRCS) $(wasm_api_TEST_SRCS) test.cc
 
-$(WASM_API_TEST_CCS:.cc=.o): CXXFLAGS += $(Catch2_CFLAGS)  -I./include
-$(WASM_API_SRCS:.cc=.o): CXXFLAGS += $(wasm_api_CFLAGS)
+AM_CPPFLAGS = \
+	$(gtest_CFLAGS) \
+	$(wasm_api_CFLAGS)
+
+LDADD = \
+	$(gtest_LIBS) \
+	$(wasm_api_LIBS)
 
 test.o : CXXFLAGS += $(Catch2_CFLAGS)
-test.o: $(WASM_API_TEST_WASMS)
+test.o: $(wasm_api_TEST_WASMS)
 
 check_PROGRAMS = test
 TESTS = test
-
-test_LDADD = $(Catch2_LIBS)
