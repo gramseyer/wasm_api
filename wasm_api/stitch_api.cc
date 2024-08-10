@@ -230,5 +230,10 @@ Stitch_WasmRuntime::consume_gas(uint64_t gas)
     available_gas -= gas;
 }
 
+uint64_t
+Stitch_WasmRuntime::get_available_gas() const {
+    return available_gas;
+}
+
 
 } // namespace wasm_api

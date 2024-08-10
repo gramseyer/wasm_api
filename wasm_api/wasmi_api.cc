@@ -37,6 +37,8 @@ extern "C"
     bool wasmi_consume_gas(void* runtime_pointer,
         uint64_t gas_to_consume);
 
+    uint64_t wasmi_get_available_gas(const void* runtime_pointer);
+
     void wasmi_link_nargs(void* runtime_pointer,
                            const uint8_t* module_bytes,
                            const uint32_t module_bytes_len,
@@ -141,6 +143,12 @@ Wasmi_WasmRuntime::consume_gas(uint64_t gas)
     {
         throw WasmError("gas limit exceeded");
     }
+}
+
+
+uint64_t 
+Wasmi_WasmRuntime::get_available_gas() const {
+    return wasmi_get_available_gas(runtime_pointer);
 }
 
 void

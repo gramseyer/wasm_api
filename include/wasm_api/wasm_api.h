@@ -110,6 +110,9 @@ public:
 	virtual void
 	consume_gas(uint64_t gas) = 0;
 
+	virtual uint64_t
+	get_available_gas() const = 0;
+
 	virtual ~WasmRuntimeImpl() {}
 protected:
 	WasmRuntimeImpl() = default;
@@ -281,6 +284,8 @@ public:
 	uint32_t safe_strlen(uint32_t start, uint32_t max_len) const;
 
 	void consume_gas(uint64_t gas);
+
+	uint64_t get_available_gas() const;
 
 	~WasmRuntime();
 };

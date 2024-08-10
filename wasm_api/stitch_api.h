@@ -79,7 +79,8 @@ public:
 
     detail::MeteredReturn<uint64_t> invoke(std::string const& method_name, uint64_t gas_limit) override final;
 
-    void consume_gas(uint64_t gas);
+    void consume_gas(uint64_t gas) override;
+    uint64_t get_available_gas() const override;
 
 private:
     void* runtime_pointer;

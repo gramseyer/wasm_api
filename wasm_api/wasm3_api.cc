@@ -47,9 +47,7 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 
 	out -> initialize(new_runtime);
 
-	//WasmRuntime* out = new WasmRuntime(new Wasm3_WasmRuntime(std::move(runtime), std::move(module)));
-
-	return std::unique_ptr<WasmRuntime>(out);//std::unique_ptr<WasmRuntime>(out);
+	return std::unique_ptr<WasmRuntime>(out);
 }
 
 detail::MeteredReturn<uint64_t>
@@ -71,6 +69,11 @@ Wasm3_WasmRuntime::consume_gas(uint64_t gas)
 		throw WasmError("gas limit exceeded");
 	}
 	available_gas -= gas;
+}
+
+uint64_t
+Wasm3_WasmRuntime::get_available_gas() const {
+	return available_gas;
 }
 
 

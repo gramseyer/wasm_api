@@ -125,6 +125,8 @@ public:
 	// with calls to a "consume gas" function.  Host functions
 	// should also call into this, as necessary.
 	void consume_gas(uint64_t gas) override;
+
+	uint64_t get_available_gas() const override;
 };
 
 } /* wasm_api */

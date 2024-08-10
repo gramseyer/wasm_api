@@ -169,6 +169,11 @@ WasmRuntime::consume_gas(uint64_t gas) {
     impl -> consume_gas(gas);
 }
 
+uint64_t
+WasmRuntime::get_available_gas() const {
+    return impl->get_available_gas();
+}
+
 namespace detail
 {
 

@@ -398,6 +398,12 @@ pub extern "C" fn wasmi_consume_gas(runtime: *mut Wasmi_WasmRuntime, gas_consume
     return true;
 }
 
+#[no_mangle]
+pub extern "C" fn wasmi_get_available_gas(runtime: *const Wasmi_WasmRuntime) -> u64 {
+    let r = unsafe { &*runtime };
+    return r.store.get_fuel().unwrap();
+}
+
 fn string_from_parts(bytes: *const u8, len: u32) -> Result<String, Utf8Error> {
     let slice = unsafe { slice::from_raw_parts(bytes, len as usize) };
     match std::str::from_utf8(&slice) {
