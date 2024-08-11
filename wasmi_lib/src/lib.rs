@@ -14,18 +14,19 @@ pub struct Wasmi_WasmContext {
 impl Wasmi_WasmContext {
     pub fn new(stack_limit : u32) -> Wasmi_WasmContext {
 
-        let register_len = 8; // size_of::<wasmi::UntypedVal>();
-        let stack_limit = 
+        let register_len = 8u32; // size_of::<wasmi::UntypedVal>();
+        let out_limit = 
         match StackLimits::new(
-            1024 / register_len, // default is (1024=wasmi::DEFAULT_MIN_VALUE_STACK_HEIGHT) / register_len,
-            stack_limit as usize,
+            1024 / register_len as usize, // default is (1024=wasmi::DEFAULT_MIN_VALUE_STACK_HEIGHT) / register_len,
+            (stack_limit / register_len) as usize,
             1024 // default is 1024 = wasmi::DEFAULT_MAX_RECURSION_DEPTH)
             ) {
             Ok(x) => x,
             Err(_) => StackLimits::default()
         };
+        //println!("{}", out_limit.maximum_value_stack_height);
         Self {
-            engine: Engine::new(&Config::default().consume_fuel(true).floats(false).set_stack_limits(stack_limit)),
+            engine: Engine::new(&Config::default().consume_fuel(true).floats(false).set_stack_limits(out_limit)),
         }
     }
 }
