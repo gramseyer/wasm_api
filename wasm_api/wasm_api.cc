@@ -35,7 +35,7 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
             case SupportedWasmEngine::MAKEPAD_STITCH:
                 return new Stitch_WasmContext();
             case SupportedWasmEngine::WASMI:
-                return new Wasmi_WasmContext();
+                return new Wasmi_WasmContext(MAX_STACK_BYTES);
             default:
                 return nullptr;
         }

@@ -1,4 +1,4 @@
-use wasmi::{Caller, Config, Engine, Error, Func, Instance, Linker, Module, Store, Val};
+use wasmi::{Caller, Config, Engine, Error, Func, Instance, Linker, Module, Store, Val, StackLimits};
 
 use core::ffi::c_void;
 use std::slice;
@@ -12,10 +12,20 @@ pub struct Wasmi_WasmContext {
 }
 
 impl Wasmi_WasmContext {
-    pub fn new() -> Wasmi_WasmContext {
+    pub fn new(stack_limit : u32) -> Wasmi_WasmContext {
 
+        let register_len = 8; // size_of::<wasmi::UntypedVal>();
+        let stack_limit = 
+        match StackLimits::new(
+            1024 / register_len, // default is (1024=wasmi::DEFAULT_MIN_VALUE_STACK_HEIGHT) / register_len,
+            stack_limit as usize,
+            1024 // default is 1024 = wasmi::DEFAULT_MAX_RECURSION_DEPTH)
+            ) {
+            Ok(x) => x,
+            Err(_) => StackLimits::default()
+        };
         Self {
-            engine: Engine::new(&Config::default().consume_fuel(true).floats(false)),
+            engine: Engine::new(&Config::default().consume_fuel(true).floats(false).set_stack_limits(stack_limit)),
         }
     }
 }
@@ -558,8 +568,8 @@ pub extern "C" fn wasmi_invoke(
 }
 
 #[no_mangle]
-pub extern "C" fn new_wasmi_context() -> *mut Wasmi_WasmContext {
-    let b = Box::new(Wasmi_WasmContext::new());
+pub extern "C" fn new_wasmi_context(max_stack_bytes : u32) -> *mut Wasmi_WasmContext {
+    let b = Box::new(Wasmi_WasmContext::new(max_stack_bytes));
 
     return Box::into_raw(b);
 }

@@ -47,7 +47,7 @@ extern "C"
                           void* fn_pointer,
                           uint8_t nargs);
 
-    void* new_wasmi_context();
+    void* new_wasmi_context(uint32_t max_stack_bytes);
     void free_wasmi_context(void* wasmi_context);
     void* new_wasmi_runtime(const uint8_t* data,
                             uint32_t size,
@@ -59,8 +59,8 @@ extern "C"
 namespace wasm_api
 {
 
-Wasmi_WasmContext::Wasmi_WasmContext()
-    : context_pointer(new_wasmi_context())
+Wasmi_WasmContext::Wasmi_WasmContext(uint32_t max_stack_bytes)
+    : context_pointer(new_wasmi_context(max_stack_bytes))
 {}
 
 Wasmi_WasmContext::~Wasmi_WasmContext()

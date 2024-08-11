@@ -10,7 +10,7 @@ class Wasmi_WasmRuntime;
 class Wasmi_WasmContext : public detail::WasmContextImpl
 {
 public:
-    Wasmi_WasmContext();
+    Wasmi_WasmContext(uint32_t max_stack_bytes);
 
     ~Wasmi_WasmContext();
 
