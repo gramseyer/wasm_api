@@ -59,7 +59,7 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 }
 
 detail::MeteredReturn<uint64_t>
-Wasm3_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
+Wasm3_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_limit)
 {
     auto fn = runtime->find_function(method_name.c_str());
 

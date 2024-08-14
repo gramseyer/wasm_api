@@ -35,7 +35,8 @@ wasm_api_TEST_SRCS = \
 	%reldir%/tests/wasm3_test.cc \
 	%reldir%/tests/mem_test.cc \
 	%reldir%/tests/wasm_api_test.cc \
-	%reldir%/tests/userctx_tests.cc
+	%reldir%/tests/userctx_tests.cc \
+	%reldir%/tests/gas_api_test.cc
 
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
 $(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/.

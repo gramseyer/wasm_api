@@ -99,7 +99,7 @@ Stitch_WasmRuntime::get_memory() const
 }
 
 detail::MeteredReturn<uint64_t>
-Stitch_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
+Stitch_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_limit)
 {
     available_gas = gas_limit;
     auto invoke_res

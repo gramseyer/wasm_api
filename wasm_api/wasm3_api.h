@@ -107,7 +107,7 @@ public:
     };
 
     detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
-                                           uint64_t gas_limit) override;
+                                           const uint64_t gas_limit) override;
 
     // This version of WasmRuntime requires the wasm to be instrumented
     // with calls to a "consume gas" function.  Host functions

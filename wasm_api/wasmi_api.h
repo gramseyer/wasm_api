@@ -63,7 +63,7 @@ public:
                                uint64_t)) override;
 
     detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
-                                           uint64_t gas_limit) override final;
+                                           const uint64_t gas_limit) override final;
 
     bool 
     __attribute__((warn_unused_result))

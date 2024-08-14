@@ -206,13 +206,19 @@ bool
 __attribute__((warn_unused_result))
 WasmRuntime::consume_gas(uint64_t gas)
 {
-    return impl->consume_gas(gas);
+    if (impl) {
+        return impl->consume_gas(gas);
+    }
+    return false;
 }
 
 uint64_t
 WasmRuntime::get_available_gas() const
 {
-    return impl->get_available_gas();
+    if (impl) {
+        return impl->get_available_gas();
+    }
+    return 0;
 }
 
 namespace detail

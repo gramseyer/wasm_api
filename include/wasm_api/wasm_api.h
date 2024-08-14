@@ -124,7 +124,7 @@ public:
         = 0;
 
     virtual detail::MeteredReturn<uint64_t>
-    invoke(std::string const& method_name, uint64_t gas_limit) = 0;
+    invoke(std::string const& method_name, const uint64_t gas_limit) = 0;
 
     virtual bool
     __attribute__((warn_unused_result))
@@ -383,6 +383,11 @@ public:
     __attribute__((warn_unused_result))
     consume_gas(uint64_t gas);
     uint64_t get_available_gas() const;
+    void set_available_gas(uint64_t gas) {
+    	if (impl) {
+    		impl -> set_available_gas(gas);
+    	}
+    }
 
     ~WasmRuntime();
 

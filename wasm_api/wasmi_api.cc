@@ -20,7 +20,7 @@ struct WasmiInvokeResult
 {
     uint64_t result;
     uint32_t error;
-    uint64_t gas_remaining;
+    uint64_t gas_consumed;
 };
 
 extern "C"
@@ -110,7 +110,7 @@ Wasmi_WasmRuntime::get_memory() const
 }
 
 detail::MeteredReturn<uint64_t>
-Wasmi_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
+Wasmi_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_limit)
 {
     auto invoke_res
         = ::wasmi_invoke(runtime_pointer,
@@ -121,26 +121,26 @@ Wasmi_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
     switch (WasmiInvokeError(invoke_res.error))
     {
         case WasmiInvokeError::None:
-            return { invoke_res.result, gas_limit - invoke_res.gas_remaining, ErrorType::None };
+            return { invoke_res.result, invoke_res.gas_consumed, ErrorType::None };
         case WasmiInvokeError::WasmiError:
             // link errors here -- i.e. missing imports or malformed wasm or the like.
-            return {std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            return {std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
         case WasmiInvokeError::InputError:
-            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };            
+            return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };            
            // throw WasmError("invalid input fn name");
         case WasmiInvokeError::FuncNExist:
-            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
             //throw WasmError("func nexist");
         case WasmiInvokeError::ReturnTypeError:
-            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
             //throw WasmError("output type error");
         case WasmiInvokeError::CallError:
             // Error within wasm, or out of gas, or stack limit, or ...
-            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
             //throw WasmError("call error");
         case WasmiInvokeError::HostError:
             // propagating a HostError from a nested call
-            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
         case WasmiInvokeError::UnrecoverableSystemError:
             throw UnrecoverableSystemError("unrecoverable system error propagating from wasmi");
     } 
