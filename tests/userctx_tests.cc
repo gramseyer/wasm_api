@@ -65,6 +65,7 @@ TEST_P(UserCtxTests, check_userctx_correct)
 INSTANTIATE_TEST_SUITE_P(AllEngines, UserCtxTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
                           wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                          wasm_api::SupportedWasmEngine::WASMI));
+                          wasm_api::SupportedWasmEngine::WASMI,
+                          wasm_api::SupportedWasmEngine::FIZZY));
 
 } /* wasm_api */

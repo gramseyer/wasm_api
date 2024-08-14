@@ -95,6 +95,7 @@ TEST_P(GasApiTest, invoke_resets_gas)
 INSTANTIATE_TEST_SUITE_P(AllEngines, GasApiTest,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
                             wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                            wasm_api::SupportedWasmEngine::WASMI));
+                            wasm_api::SupportedWasmEngine::WASMI,
+                            wasm_api::SupportedWasmEngine::FIZZY));
 
 

@@ -1,3 +1,6 @@
 [submodule "wasm3"]
 	path = wasm3
 	url = https://github.com/gramseyer/wasm3.git
+[submodule "fizzy"]
+	path = fizzy
+	url = http://github.com/wasmx/fizzy.git

@@ -24,6 +24,7 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+#include <optional>
 
 namespace wasm_api
 {
@@ -164,6 +165,7 @@ enum class SupportedWasmEngine
     WASM3 = 0,
     MAKEPAD_STITCH = 1,
     WASMI = 2,
+    FIZZY = 3,
 };
 
 class WasmContext

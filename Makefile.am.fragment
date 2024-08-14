@@ -3,7 +3,8 @@
 wasm_api_CFLAGS = -I %reldir%/include
 wasm_api_LIBS = \
 	%reldir%/stitch_lib/target/release/libstitch_lib.a \
-	%reldir%/wasmi_lib/target/release/libwasmi_lib.a
+	%reldir%/wasmi_lib/target/release/libwasmi_lib.a \
+	%reldir%/fizzy/build/lib/libfizzy.a 
 
 
 WASM3_SRCS = \
@@ -29,31 +30,42 @@ wasm_api_SRCS = \
 	%reldir%/wasm_api/wasm3_api.cc \
 	%reldir%/wasm_api/wasmi_api.cc \
 	%reldir%/wasm_api/stitch_api.cc \
-	%reldir%/wasm_api/ffi_trampolines.cc
+	%reldir%/wasm_api/ffi_trampolines.cc \
+	%reldir%/wasm_api/fizzy_api.cc
 
 wasm_api_TEST_SRCS = \
 	%reldir%/tests/wasm3_test.cc \
 	%reldir%/tests/mem_test.cc \
 	%reldir%/tests/wasm_api_test.cc \
 	%reldir%/tests/userctx_tests.cc \
-	%reldir%/tests/gas_api_test.cc
+	%reldir%/tests/gas_api_test.cc \
+	%reldir%/tests/instantiate_tests.cc \
+	%reldir%/tests/invoke_arity_tests.cc
 
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
-$(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/.
-$(wasm_api_TEST_SRCS:.cc=.o) : CXXFLAGS += -I %reldir%/.
+$(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/. -I %reldir%/fizzy/build/include/
+$(wasm_api_TEST_SRCS:.cc=.o) : CXXFLAGS += -I %reldir%/.  -I %reldir%/fizzy/build/include/
 
 WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_call_simple.wat \
 	%reldir%/tests/wat/test_error_handling.wat \
 	%reldir%/tests/wat/test_set_memory.wat \
-	%reldir%/tests/wat/test_invoke.wat
+	%reldir%/tests/wat/test_invoke.wat \
+	%reldir%/tests/wat/test_invoke_arity.wat
 
 wasm_api_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
 
 %reldir%/stitch_lib/target/release/libstitch_lib.a : %reldir%/stitch_lib/src/*.rs
-	cd %reldir%/stitch_lib && \
+	cd %reldir%/stitch_lib &&\
 	cargo build --release --package stitch_lib
 
 %reldir%/wasmi_lib/target/release/libwasmi_lib.a : %reldir%/wasmi_lib/src/*.rs
-	cd %reldir%/wasmi_lib && \
+	cd %reldir%/wasmi_lib &&\
 	cargo build --release --package wasmi_lib
+
+%reldir%/fizzy/build/lib/libfizzy.a : 
+	cd %reldir%/fizzy/ &&\
+	mkdir -p build && cd build &&\
+	cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=TRUE -DCMAKE_INSTALL_PREFIX=$$(pwd) -DCMAKE_CXX_FLAGS="-mcpu=native -std=gnu++2b" &&\
+	make &&\
+	make install
