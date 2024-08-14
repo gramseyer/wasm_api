@@ -88,13 +88,19 @@ WasmRuntime::~WasmRuntime()
 std::pair<uint8_t*, uint32_t>
 WasmRuntime::get_memory()
 {
-    return impl->get_memory();
+    if (impl) {
+        return impl->get_memory();
+    }
+    return {nullptr, 0};
 }
 
 std::pair<const uint8_t*, uint32_t>
 WasmRuntime::get_memory() const
 {
-    return impl->get_memory();
+    if (impl) {
+        return impl->get_memory();
+    }
+    return {nullptr, 0};
 }
 
 int32_t
@@ -114,28 +120,40 @@ WasmRuntime::memset(uint32_t dst, uint8_t val, uint32_t len)
     return dst;
 }
 
-// throws if memory regions overlap
 uint32_t
-WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len)
+WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len) {
+    auto res = safe_memcpy_noexcept(dst, src, len);
+    if (!res.has_value()) {
+        throw HostError("safe memcpy failed");
+    }
+    return *res;
+}
+
+// throws if memory regions overlap
+std::optional<uint32_t>
+__attribute__((warn_unused_result))
+WasmRuntime::safe_memcpy_noexcept(uint32_t dst, uint32_t src, uint32_t len)
 {
     auto [mem, mlen] = get_memory();
 
     // implicity checks overflows for src+len and dst+len
-    detail::check_bounds(mlen, std::max(src, dst), len);
+    if (!detail::check_bounds_noexcept(mlen, std::max(src, dst), len)) {
+        return std::nullopt;
+    }
 
     if (dst <= src && dst + len > src)
     {
-        throw HostError("overlapping memcpy");
+        return std::nullopt; // overlapping memcpy
     }
     if (src <= dst && src + len > dst)
     {
-        throw HostError("overlapping memcpy");
+        return std::nullopt; // overlapping memcpy
     }
 
-    if (src + len > mlen || dst + len > mlen)
+    /*if (src + len > mlen || dst + len > mlen)
     {
         throw HostError("OOB memcpy");
-    }
+    } */
 
     std::memcpy(mem + dst, mem + src, len);
     return dst;
@@ -184,10 +202,11 @@ WasmRuntime::_write_to_memory_noexcept(
 
 }
 
-void
+bool
+__attribute__((warn_unused_result))
 WasmRuntime::consume_gas(uint64_t gas)
 {
-    impl->consume_gas(gas);
+    return impl->consume_gas(gas);
 }
 
 uint64_t

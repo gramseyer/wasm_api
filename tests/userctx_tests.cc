@@ -57,7 +57,9 @@ uint32_t expect = 0;
 
 TEST_P(UserCtxTests, check_userctx_correct)
 {
-	EXPECT_EQ(runtime->template invoke<uint32_t>("calltest").out, 15u);
+  auto res = runtime->template invoke<uint32_t>("calltest");
+  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
+	EXPECT_EQ(res.out, 15u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, UserCtxTests,

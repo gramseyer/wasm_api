@@ -130,12 +130,12 @@ impl Wasmi_WasmRuntime {
                 return Ok(());
             }
             None => match self.linker.instantiate(&mut self.store, &self.module) {
-                Ok(inst_pre) => match inst_pre.start(&mut self.store) {
+                Ok(inst_pre) => match inst_pre.ensure_no_start(&mut self.store) {
                     Ok(inst) => {
                         self.instance = Some(inst);
                         Ok(())
                     }
-                    Err(x) => Err(x),
+                    Err(x) => Err(x.into()),
                 },
                 Err(x) => Err(x),
             },
@@ -413,6 +413,12 @@ pub extern "C" fn wasmi_consume_gas(runtime: *mut Wasmi_WasmRuntime, gas_consume
 pub extern "C" fn wasmi_get_available_gas(runtime: *const Wasmi_WasmRuntime) -> u64 {
     let r = unsafe { &*runtime };
     return r.store.get_fuel().unwrap();
+}
+
+#[no_mangle]
+pub extern "C" fn wasmi_set_available_gas(runtime: *mut Wasmi_WasmRuntime, gas : u64) {
+    let r = unsafe { &mut *runtime };
+    r.store.set_fuel(gas).unwrap();
 }
 
 fn string_from_parts(bytes: *const u8, len: u32) -> Result<String, Utf8Error> {

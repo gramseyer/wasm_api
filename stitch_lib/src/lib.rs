@@ -15,22 +15,15 @@ pub struct Stitch_WasmContext {
 
 impl Stitch_WasmContext {
     pub fn new() -> Stitch_WasmContext {
-        //println!("create wasmcontext");
         Self {
             engine : Engine::new(),
         }
     }
 }
 
-impl Drop for Stitch_WasmContext {
-    fn drop(&mut self) {
-       // println!("dropping wasmContext");
-    }
-}
-
 #[allow(non_camel_case_types)]
 pub struct Stitch_WasmRuntime {
-    context : Rc<Stitch_WasmContext>,
+    _context : Rc<Stitch_WasmContext>, // keep alive reference to context
     module : Module,
     store : Store,
     linker: Linker,
@@ -86,7 +79,7 @@ impl Stitch_WasmRuntime {
         let module = Module::new(store.engine(), &bytes).unwrap();
         //let instance = Linker::new().instantiate(&mut store, &module).unwrap();
         Self {
-            context : context.clone(),
+            _context : context.clone(),
             module : module,
             store : store,
             linker: Linker::new(),
@@ -116,8 +109,7 @@ impl Stitch_WasmRuntime {
             userctx : self.userctx.clone(),
         };
 
-        #[allow(unused_doc_comments)]
-        /**
+        /*
          * Stitch very frustratingly does not support returning a Result from one of these calls.
          * The IntoFunc trait requires that the output be a HostResult, which requires HostVal, which is only instantiated
          * for basic wasm types (i.e. i32, u64...).  The trait isn't exported.  _sigh_.
@@ -392,6 +384,17 @@ pub extern "C" fn stitch_invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const
                     _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::ReturnTypeError as u32 }; },
                 }
             },
+            /*
+             * 
+             * Errors here are mismatched function types,
+             * or anything that comes out of executing wasm.
+             * My (limited) understanding from skimmimg the codebase
+             * is that errors would be from (legitimate, deterministic) wasm errors,
+             * and that allocation errors (the only source of nondeterminism of which I am aware, in this codebase)
+             * just become rust panic()s.
+             * 
+             * But additional checks on the type of the returned error could be applied, if necessary.
+             */
             Err(_) => {return StitchInvokeResult { result : 0, error : StitchInvokeError::WasmError as u32};}
         };
    /* }) {

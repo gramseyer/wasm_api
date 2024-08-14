@@ -57,13 +57,15 @@ template<>
 struct MeteredReturn<void>
 {
     uint64_t consumed_gas = 0;
+    ErrorType panic;
 };
 
 template<typename T>
 struct MeteredReturn
 {
-    T out;
+    std::optional<T> out;
     uint64_t consumed_gas = 0;
+    ErrorType panic;
 };
 
 class WasmRuntimeImpl;
@@ -124,9 +126,12 @@ public:
     virtual detail::MeteredReturn<uint64_t>
     invoke(std::string const& method_name, uint64_t gas_limit) = 0;
 
-    virtual void consume_gas(uint64_t gas) = 0;
+    virtual bool
+    __attribute__((warn_unused_result))
+    consume_gas(uint64_t gas) = 0;
 
     virtual uint64_t get_available_gas() const = 0;
+    virtual void set_available_gas(uint64_t gas) = 0;
 
     virtual ~WasmRuntimeImpl() {}
 
@@ -191,22 +196,46 @@ public:
 
     HostCallContext* get_host_call_context() { return &host_call_context; }
 
+    /**
+     * Invoke pushes the current available gas limit onto the stack,
+     * and then runs using the gas specified by gas_limit.
+     * It restores the amount of gas after the invocation.
+     * In most use-cases, caller should then deduct (return_value).gas_consumed
+     * from some other gas limit.
+     **/
     template<typename ret>
     detail::MeteredReturn<ret> invoke(std::string const& method_name,
                                       uint64_t gas_limit = UINT64_MAX)
     {
         if constexpr (std::is_same<ret, void>::value)
         {
+        	if (!impl) {
+        		return {0, ErrorType::UnrecoverableSystemError};
+        	}
+        	uint64_t gas_backup = impl -> get_available_gas();
+        	auto res = impl -> invoke(method_name, gas_limit);
+        	impl -> set_available_gas(gas_backup);
             return detail::MeteredReturn<void>{
                 .consumed_gas
-                = impl->invoke(method_name, gas_limit).consumed_gas
+                = res.consumed_gas,
+                .panic = res.panic
             };
         } else
         {
+        	if (!impl) {
+        		return {std::nullopt, 0, ErrorType::UnrecoverableSystemError};
+        	}
+        	uint64_t gas_backup = impl -> get_available_gas();
             auto res = impl->invoke(method_name, gas_limit);
-            return detail::MeteredReturn<ret>{ .out = static_cast<ret>(res.out),
+            impl -> set_available_gas(gas_backup);
+            std::optional<ret> cast_out = std::nullopt;
+            if (res.out.has_value()) {
+            	cast_out = {static_cast<ret>(*res.out)};
+            }
+            return detail::MeteredReturn<ret>{ .out = cast_out,
                                                .consumed_gas
-                                               = res.consumed_gas };
+                                               = res.consumed_gas,
+                                               .panic = res.panic };
         }
     }
 
@@ -214,23 +243,52 @@ public:
     template<auto f>
     void link_fn(const char* module, const char* fn_name)
     {
+    	if (!impl) {
+    		return;	
+    	}
         impl->link_fn(module, fn_name, f);
     }
 
     template<auto f>
     void link_env(const char* fn_name)
     {
+    	if (!impl) {
+    		return;
+    	}
         impl->link_fn("env", fn_name, f);
     }
 
+    template<detail::VectorLike V>
+    bool __attribute__((warn_unused_result))
+    load_from_memory_noexcept(V& out, uint32_t offset, uint32_t read_len) const noexcept
+    {
+    	// must preallocate, or else we might error inside noexcept
+    	if (out.size() != read_len) {
+    		return false;
+    	}
+
+    	auto const [mem, mlen] = get_memory();
+
+    	if (!detail::check_bounds_noexcept(mlen, offset, read_len)) {
+    		return false;
+    	}
+
+    	std::memcpy(out.data(), mem + offset, read_len);
+    	return true;
+    }
+
+
+
+    // can't be _noexcept_ if the allocations might fail
     template<typename ArrayLike>
     ArrayLike load_from_memory(uint32_t offset, uint32_t len) const
     {
-        auto const [mem, mlen] = get_memory();
-
-        detail::check_bounds(mlen, offset, len);
-
-        return ArrayLike(mem + offset, mem + offset + len);
+    	ArrayLike out;
+    	out.resize(len);
+        if (!load_from_memory_noexcept(out, offset, len)) {
+        	throw HostError("failed to load from memory");
+        }
+        return out;
     }
 
     template<typename ArrayLike>
@@ -239,21 +297,22 @@ public:
         ArrayLike out;
         const size_t len = out.size();
 
-        auto const [mem, mlen] = get_memory();
+        if (!load_from_memory_noexcept(out, offset, len))
+        {
+        	throw HostError("failed to load from memory");
+        }
 
-        detail::check_bounds(mlen, offset, len);
-
-        std::memcpy(out.data(), mem + offset, len);
         return out;
     }
 
-    template<detail::VectorLike V>
-    void write_to_memory(V const& array, uint32_t offset, uint32_t max_len)
-    {
-        uint32_t write_len = std::min<uint32_t>(max_len, array.size());
-
-        _write_to_memory(array.data(), offset, write_len);
+    template<typename T, typename... Args>
+    void
+    write_to_memory(T const& value, Args const& ... args) {
+    	if (!write_to_memory_noexcept(value, args...)) {
+    		throw HostError("write to memory failed");
+    	}
     }
+
 
     template<detail::VectorLike V>
     bool
@@ -265,6 +324,17 @@ public:
         return _write_to_memory_noexcept(array.data(), offset, write_len);
     }
 
+    template<std::integral integer_type>
+    bool
+    __attribute__((warn_unused_result))
+    write_to_memory_noexcept(integer_type const& value, uint32_t offset) noexcept
+    {
+        static_assert(std::endian::native == std::endian::little);
+
+        return _write_to_memory_noexcept(reinterpret_cast<const uint8_t*>(&value),
+                         offset,
+                         sizeof(integer_type));
+    }
 
     template<detail::VectorLike V>
     void write_slice_to_memory(V const& array,
@@ -272,42 +342,46 @@ public:
                                uint32_t slice_start,
                                uint32_t slice_end)
     {
-        if (slice_start > slice_end)
+    	if (!write_slice_to_memory_noexcept(array, offset, slice_start, slice_end)) {
+    		throw HostError("write slice failed");
+    	}
+    }
+
+    template<detail::VectorLike V>
+    bool 
+    __attribute__((warn_unused_result))
+    write_slice_to_memory_noexcept(V const& array,
+                               uint32_t offset,
+                               uint32_t slice_start,
+                               uint32_t slice_end) noexcept
+    {
+        if ((slice_start > slice_end) || (slice_end > array.size()))
         {
-            throw HostError("invalid slice params");
+            return false;
         }
 
-        if (slice_end > array.size())
-        {
-            throw HostError("array too short");
-        }
-
-        _write_to_memory(
+        return _write_to_memory_noexcept(
             array.data() + slice_start, offset, (slice_end - slice_start));
     }
 
-    template<std::integral integer_type>
-    void write_to_memory(integer_type const& value, uint32_t offset)
-    {
-        static_assert(std::endian::native == std::endian::little);
-
-        _write_to_memory(reinterpret_cast<const uint8_t*>(&value),
-                         offset,
-                         sizeof(integer_type));
-    }
-
     int32_t memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const;
-
     uint32_t memset(uint32_t dst, uint8_t val, uint32_t len);
 
     uint32_t safe_memcpy(uint32_t dst, uint32_t src, uint32_t len);
+    std::optional<uint32_t>
+    __attribute__((warn_unused_result))
+    safe_memcpy_noexcept(uint32_t dst, uint32_t src, uint32_t len);
 
     uint32_t safe_strlen(uint32_t start, uint32_t max_len) const;
 
-    // TODO: caller must be careful with reentrance on a WasmRuntime
-    // when managing gas consumption
-    void consume_gas(uint64_t gas);
-
+    /**
+     * If consume_gas returns true, then gas was consumed successfully.
+     * If not, as much gas as possible is still consumed.
+     * (i.e. consumed is max(gas, get_available_gas()))
+     */
+    bool
+    __attribute__((warn_unused_result))
+    consume_gas(uint64_t gas);
     uint64_t get_available_gas() const;
 
     ~WasmRuntime();

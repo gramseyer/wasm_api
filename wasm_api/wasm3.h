@@ -157,6 +157,9 @@ namespace wasm3 {
                     m3ApiTrap(m3Err_trapHostEnvError);
                 } catch(std::runtime_error& e)
                 {
+                    // We needed this, rather than just throwing all the way back to the top invocation,
+                    // because wasm3 had a bug in the unwinding/dtor code.  This has since been fixed
+                    // (in dec 2023)
                     std::printf("cannot recover from other errors safely: what %s\n", e.what());
                     m3ApiTrap(m3Err_unrecoverableSystemError);
                 } catch(...)
@@ -230,27 +233,37 @@ namespace wasm3 {
                                             reinterpret_cast<void*>(function));
             }
         };
+
+        template<typename ret_t>
+        struct opt_t;
+
+        struct empty {};
+
+        template<> struct opt_t<void> {
+            using type = std::optional<empty>;
+        };
+
+        template<typename ret_t>
+        struct opt_t {
+            using type = std::optional<ret_t>;
+        };
     } // namespace detail
     /** @endcond */
 
     /** @cond */
     namespace detail {
-        static inline void check_error(M3Result err) {
-            if (err != m3Err_none) {
-                if (err == m3Err_unrecoverableSystemError)
-                {
-                    throw wasm_api::UnrecoverableSystemError(err);
-                }
-                throw wasm_api::WasmError(err);
+
+        static inline void throw_nondeterministic_errors(M3Result err)
+        {
+            if (err == m3Err_mallocFailed) {
+                throw wasm_api::UnrecoverableSystemError(err);
             }
-        }
-        static inline void check_error_return(M3Result err) {
-            if (err != m3Err_none) {
-                if (err == m3Err_unrecoverableSystemError)
-                {
-                    throw wasm_api::UnrecoverableSystemError(err);
-                }
-                throw wasm_api::WasmError(std::string(err));
+            if (err == m3Err_mallocFailedCodePage) {
+                throw wasm_api::UnrecoverableSystemError(err);
+            }
+            if (err == m3Err_unrecoverableSystemError) {
+                // rethrow, perhaps
+                throw wasm_api::UnrecoverableSystemError(err);
             }
         }
     } // namespace detail
@@ -315,25 +328,20 @@ namespace wasm3 {
          * Load the module into runtime
          * @param mod  module parsed by environment::parse_module
          */
-        void load(module &mod);
+        bool
+        __attribute__((warn_unused_result))
+        load(module &mod);
 
         /**
          * Get a function handle by name
          * 
-         * If the function is not found, throws an exception.
+         * If the function is not found, returns nullopt
          * @param name  name of a function, c-string
          * @return function object
          */
-        function find_function(const char *name);
+        std::optional<function> find_function(const char *name);
 
         std::pair<uint8_t*, size_t> get_memory();
-
-    #ifdef TRACE_WASM3_API
-        ~runtime()
-        {
-            std::printf("deleting runtime %p\n", this);
-        }
-    #endif
 
         friend class environment;
 
@@ -343,9 +351,6 @@ namespace wasm3 {
             if (m_runtime == nullptr) {
                 throw std::bad_alloc();
             }
-        #ifdef TRACE_WASM3_API
-            std::printf("creating runtime %p\n", this);
-        #endif
         }
 
     protected:
@@ -367,7 +372,7 @@ namespace wasm3 {
         /**
          * Link an external function.
          *
-         * Throws an exception if the module doesn't reference a function with the given name.
+         * Returns false if the module doesn't reference a function with the given name.
          *
          * @tparam Func Function type (signature)
          * @param module  Name of the module to link the function to, or "*" to link to any module
@@ -375,17 +380,17 @@ namespace wasm3 {
          * @param function  Function to link (a function pointer)
          */
         template<typename ret, typename...Args>
-        void link(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
+        bool link(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
         template<typename...Args>
-        void link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
+        bool link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
 
         /**
-         * Same as module::link, but doesn't throw an exception if the function is not referenced.
+         * Same as module::link, but doesn't return false if the function is not referenced.
          */
         template<typename ret, typename...Args>
-        void link_optional(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
+        bool link_optional(const char *module, const char *function_name, ret (*function)(wasm_api::HostCallContext*, Args...));
         template<typename...Args>
-        void link_optional(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
+        bool link_optional(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...));
 
         ~module()
         {
@@ -398,23 +403,23 @@ namespace wasm3 {
         friend class environment;
         friend class runtime;
 
-        module(const std::shared_ptr<M3Environment> &env, std::istream &in_wasm) {
+        module(std::istream &in_wasm) {
             in_wasm.unsetf(std::ios::skipws);
             std::copy(std::istream_iterator<uint8_t>(in_wasm),
                       std::istream_iterator<uint8_t>(),
                       std::back_inserter(m_moduleRawData));
-            parse(env.get(), m_moduleRawData.data(), m_moduleRawData.size());
-        #ifdef TRACE_WASM3_API
-            std::printf("creating module1 %p\n", this);
-        #endif
         }
 
-        module(const std::shared_ptr<M3Environment> &env, const uint8_t *data, size_t size) : m_env(env) {
+        module(const uint8_t *data, size_t size) {
             m_moduleRawData = std::vector<uint8_t>{data, data + size};
-            parse(env.get(), m_moduleRawData.data(), m_moduleRawData.size());
-        #ifdef TRACE_WASM3_API
-            std::printf("creating module2 %p\n", this);
-        #endif
+        }
+
+        bool 
+        __attribute__((warn_unused_result))
+        init(const std::shared_ptr<M3Environment> &env) {
+            // exists only to extend lifetime of env
+            m_env = env;
+            return parse(env.get(), m_moduleRawData.data(), m_moduleRawData.size());
         }
 
     protected:
@@ -423,29 +428,38 @@ namespace wasm3 {
         module(module&) = delete;
         module& operator=(const module&) = delete;
 
-        void parse(IM3Environment env, const uint8_t *data, size_t size) {
+        bool
+        __attribute__((warn_unused_result))
+        parse(IM3Environment env, const uint8_t *data, size_t size) {
             IM3Module p;
             M3Result err = m3_ParseModule(env, &p, data, size);
-            detail::check_error(err);
+            detail::throw_nondeterministic_errors(err);
+            if (err != m3Err_none) {
+                return false;
+            }
 
             if (m_loaded)
             {
                 m3_FreeModule(m_module);
             }
             m_module = p;
-       /*     m_module.reset(p, [this](IM3Module module) {
-                if (!m_loaded) {
-                    m3_FreeModule(module);
-                }
-            }); */
+            return true;
         }
 
-        void load_into(IM3Runtime runtime) {
+        bool
+        __attribute__((warn_unused_result))
+        load_into(IM3Runtime runtime) {
             M3Result err = m3_LoadModule(runtime, m_module);
-            detail::check_error(err);
+            detail::throw_nondeterministic_errors(err);
+            if (err != m3Err_none)
+            {
+                return false;
+            }
             m_loaded = true;
+            return true;
         }
 
+        // m_env exists only to extend lifetime of environment
         std::shared_ptr<M3Environment> m_env;
         IM3Module m_module;
 
@@ -459,87 +473,57 @@ namespace wasm3 {
      */
     class function {
     public:
-        /**
-         * Call the function with the provided arguments, expressed as strings.
-         *
-         * Arguments are passed as strings. WASM3 automatically converts them into the types expected
-         * by the function being called.
-         *
-         * Note that the type of the return value must be explicitly specified as a template argument.
-         *
-         * @return the return value of the function.
-         */
-        template<typename Ret, typename ... Args>
-        typename detail::first_type<Ret,
-                typename std::enable_if<std::is_convertible<Args, const char*>::value>::type...>::type
-        call_argv(Args... args) {
-            /* std::enable_if above checks that all argument types are convertible const char* */
-            const char* argv[] = {args...};
-            M3Result res = m3_CallArgv(m_func, sizeof...(args), argv);
-            detail::check_error(res);
-            Ret ret;
-            res = m3_GetResults(m_func, 1, &ret);
-            detail::check_error_return(res);
-            return ret;
-        }
-
-        template<typename ... Args>
-        typename detail::first_type<void, 
-                typename std::enable_if<std::is_convertible<Args, const char*>::value>::type...>::type
-        call_argv(Args... args) {
-            /* std::enable_if above checks that all argument types are convertible const char* */
-            const char* argv[] = {args...};
-            M3Result res = m3_CallArgv(m_func, sizeof...(args), argv);
-            detail::check_error_return(res);
-        }
 
         /**
          * Call the function with the provided arguments (int/float types).
          *
          * Note that the type of the return value must be explicitly specified as a template argument.
          *
-         * @return the return value of the function or void.
-         * 
-         * TODO this could be re-templated to support multi-value returns.
          */
         template<typename Ret = void, typename ... Args>
-        Ret call(Args... args) {
+        std::pair<typename detail::opt_t<Ret>::type, M3Result>
+        call(Args... args) {
             const void *arg_ptrs[] = { reinterpret_cast<const void*>(&args)... };
             M3Result res = m3_Call(m_func, sizeof...(args), arg_ptrs);
-            detail::check_error_return(res);
+            detail::throw_nondeterministic_errors(res);
+            if (res != m3Err_none)
+            {
+                return {std::nullopt, res};
+            }
 
             if constexpr (!std::is_void<Ret>::value) {
                 Ret ret;
                 const void* ret_ptrs[] = { &ret };
                 res = m3_GetResults(m_func, 1, ret_ptrs);
-                detail::check_error_return(res);
-                return ret; 
+                detail::throw_nondeterministic_errors(res);
+                if (res != m3Err_none)
+                {
+                    return {std::nullopt, res};
+                }
+                return {{ret}, res};
+            } else {
+                return {detail::empty{}, res};
             }
         }
 
         friend class runtime;
 
-        function(const std::shared_ptr<M3Runtime> &runtime, const char *name) : m_runtime(runtime) {
-            M3Result err = m3_FindFunction(&m_func, runtime.get(), name);
-            detail::check_error(err);
-            assert(m_func != nullptr);
-        #ifdef TRACE_WASM3_API
-            std::printf("creating %p\n", this);
-        #endif
+        function(const std::shared_ptr<M3Runtime> &runtime) : m_runtime(runtime) {
         }
+
+        bool
+        __attribute__((warn_unused_result))
+        initialize(const char* name) {
+            M3Result err = m3_FindFunction(&m_func, m_runtime.get(), name);
+            detail::throw_nondeterministic_errors(err);
+            return (m_func != nullptr);
+        }
+
 
     protected:
 
         std::shared_ptr<M3Runtime> m_runtime;
         M3Function *m_func = nullptr;
-
-    #ifdef TRACE_WASM3_API
-    public:
-        ~function()
-        {
-            std::printf("deleting function=%p\n", this);
-        }
-    #endif
     };
 
     inline std::unique_ptr<runtime> environment::new_runtime(size_t stack_size_bytes, void* ctxp) {
@@ -547,19 +531,33 @@ namespace wasm3 {
     }
 
     inline std::unique_ptr<module> environment::parse_module(std::istream &in) {
-        return std::make_unique<module>(m_env, in);
+        auto out = std::make_unique<module>(in);
+        if (out -> init(m_env)) {
+            return out;
+        }
+        return nullptr;
     }
 
     inline std::unique_ptr<module> environment::parse_module(const uint8_t *data, size_t size) {
-        return std::make_unique<module>(m_env, data, size);
+        auto out = std::make_unique<module>(data, size);
+        if (out -> init(m_env)) {
+            return out;
+        }
+        return nullptr;
     }
 
-    inline void runtime::load(module &mod) {
-        mod.load_into(m_runtime.get());
+    inline bool
+    __attribute__((warn_unused_result))
+    runtime::load(module &mod) {
+        return mod.load_into(m_runtime.get());
     }
 
-    inline function runtime::find_function(const char *name) {
-        return function(m_runtime, name);
+    inline std::optional<function> runtime::find_function(const char *name) {
+        auto f = function(m_runtime);
+        if (!f.initialize(name)) {
+            return std::nullopt;
+        }
+        return f;
     }
 
     inline std::pair<uint8_t*, size_t> runtime::get_memory()
@@ -570,36 +568,35 @@ namespace wasm3 {
     }
 
     template<typename R, typename... Args>
-    void module::link(const char *module, const char *function_name, R (*function)(wasm_api::HostCallContext*, Args...)) {
+    bool module::link(const char *module, const char *function_name, R (*function)(wasm_api::HostCallContext*, Args...)) {
         using Func = R(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
-        detail::check_error(ret);
+        detail::throw_nondeterministic_errors(ret);
+        return (ret == m3Err_none);
     }
+
     template<typename... Args>
-    void module::link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...)) {
+    bool module::link(const char *module, const char *function_name, void (*function)(wasm_api::HostCallContext*, Args...)) {
         using Func = void(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
-        detail::check_error(ret);
+        detail::throw_nondeterministic_errors(ret);
+        return (ret == m3Err_none);
     }
 
     template<typename R, typename... Args>
-    void module::link_optional(const char *module, const char *function_name, R(*function)(wasm_api::HostCallContext*, Args...)) {
+    bool module::link_optional(const char *module, const char *function_name, R(*function)(wasm_api::HostCallContext*, Args...)) {
         using Func = R(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
-        if (ret == m3Err_functionLookupFailed) {
-            return;
-        }
-        detail::check_error(ret);
+        detail::throw_nondeterministic_errors(ret);
+        return ((ret == m3Err_none) || (ret == m3Err_functionLookupFailed));
     }
 
     template<typename... Args>
-    void module::link_optional(const char *module, const char *function_name, void(*function)(wasm_api::HostCallContext*, Args...)) {
+    bool module::link_optional(const char *module, const char *function_name, void(*function)(wasm_api::HostCallContext*, Args...)) {
         using Func = void(wasm_api::HostCallContext*, Args...);
         M3Result ret = detail::m3_wrapper<Func>::link(m_module, module, function_name, function);
-        if (ret == m3Err_functionLookupFailed) {
-            return;
-        }
-        detail::check_error(ret);
+        detail::throw_nondeterministic_errors(ret);
+        return ((ret == m3Err_none) || (ret == m3Err_functionLookupFailed));
     }
 
 } // namespace wasm3

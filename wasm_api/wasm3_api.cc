@@ -16,6 +16,8 @@
 
 #include "wasm_api/wasm3_api.h"
 
+#include <utility>
+
 namespace wasm_api
 {
 
@@ -31,47 +33,80 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 {
     if (contract.data == nullptr)
     {
-        throw UnrecoverableSystemError(
-            "invalid nullptr passed to wasm3_wasmcontext");
+    	return nullptr;
+       /* throw UnrecoverableSystemError(
+            "invalid nullptr passed to wasm3_wasmcontext"); */
     }
 
-    WasmRuntime* out = new WasmRuntime(ctxp);
+    std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 
     auto module = env.parse_module(contract.data, contract.len);
 
     auto runtime
         = env.new_runtime(MAX_STACK_BYTES, out->get_host_call_context());
 
-    runtime->load(*module);
+    if (!runtime->load(*module))
+    {
+    	return nullptr;
+    }
 
     Wasm3_WasmRuntime* new_runtime
         = new Wasm3_WasmRuntime(std::move(runtime), std::move(module));
 
     out->initialize(new_runtime);
 
-    return std::unique_ptr<WasmRuntime>(out);
+    return std::unique_ptr<WasmRuntime>(out.release());
 }
 
 detail::MeteredReturn<uint64_t>
 Wasm3_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
 {
     auto fn = runtime->find_function(method_name.c_str());
+
+    if (!fn){
+    	return {std::nullopt, 0, ErrorType::HostError};
+    }
+
     available_gas = gas_limit;
 
-    auto res = fn.template call<uint64_t>();
+    auto [ret_val, res_err]  = fn->template call<uint64_t>();
 
-    return { res, gas_limit - available_gas };
+    uint64_t consumed_gas = gas_limit - available_gas;
+
+    if (res_err == m3Err_none)
+    {
+    	if (!ret_val.has_value())
+    	{
+    		return {std::nullopt, consumed_gas, ErrorType::UnrecoverableSystemError};
+    	}
+    	return {*ret_val, consumed_gas, ErrorType::None};
+    }    
+
+    if (res_err != m3Err_unrecoverableSystemError)
+    {
+    	return {std::nullopt, consumed_gas, ErrorType::HostError};
+    }
+
+    std::unreachable(); // m3Err_unrecoverableSystemError should have thrown from within the wasm3 api
 }
 
-void
+bool
+__attribute__((warn_unused_result))
 Wasm3_WasmRuntime::consume_gas(uint64_t gas)
 {
     if (gas > available_gas)
     {
         available_gas = 0;
-        throw WasmError("gas limit exceeded");
+        return false;
     }
     available_gas -= gas;
+    return true;
+}
+
+void
+Wasm3_WasmRuntime::set_available_gas(uint64_t gas)
+{
+    available_gas = gas;
 }
 
 uint64_t

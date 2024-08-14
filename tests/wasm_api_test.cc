@@ -54,7 +54,10 @@ uint64_t
 reentrance(HostCallContext* ctxp)
 {
     reentrance_hit = true;
-    s_runtime->template invoke<void>("unreachable");
+    auto res = s_runtime->template invoke<void>("unreachable");
+    if (res.panic == wasm_api::ErrorType::HostError) {
+        throw wasm_api::HostError("raising host error");
+    }
     return 0;
 }
 
@@ -88,7 +91,8 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
 TEST_P(ExternalCallTest, unlinked_fn)
 {
-    EXPECT_ANY_THROW(runtime -> template invoke<void>("call1"));
+    auto res = runtime -> template invoke<void>("call1");
+    EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
 }
 
 TEST_P(ExternalCallTest, runtime_error)
@@ -105,8 +109,9 @@ TEST_P(ExternalCallTest, host_error)
 {
     runtime->template link_fn<&throw_host_error>("test", "external_call");
     ERROR_GUARD
-    EXPECT_THROW(runtime->template invoke<void>("call1"),
-                      wasm_api::HostError);
+
+    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
+        wasm_api::ErrorType::HostError);
 }
 
 TEST_P(ExternalCallTest, other_weird_error)
@@ -120,35 +125,36 @@ TEST_P(ExternalCallTest, other_weird_error)
 
 
 TEST_P(ExternalCallTest, wasm_error)
-    {
-        // link all the fns, required for MAKEPAD_STITCH
-        runtime->template link_fn<&good_call>("test", "external_call");
+{
+    // link all the fns, required for MAKEPAD_STITCH
+    runtime->template link_fn<&good_call>("test", "external_call");
 
-        EXPECT_THROW(runtime->template invoke<void>("unreachable"),
-                          wasm_api::HostError);
-    }
+    auto res = runtime -> template invoke<void>("unreachable");
+
+    EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
+}
 
 TEST_P(ExternalCallTest, follow_bad_with_good)
 {
     runtime->template link_fn<&throw_host_error>("test", "external_call");
 
     ERROR_GUARD
-    EXPECT_THROW(runtime->template invoke<void>("call1"),
-                      wasm_api::HostError);
+    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
+                      wasm_api::ErrorType::HostError);
 
     runtime->template invoke<void>("call2");
 }
 
 TEST_P(ExternalCallTest, reentrance)
-    {
-        runtime->template link_fn<&reentrance>("test", "external_call");
-        s_runtime = runtime.get();
+{
+    runtime->template link_fn<&reentrance>("test", "external_call");
+    s_runtime = runtime.get();
 
-        ERROR_GUARD
-        EXPECT_THROW(runtime->template invoke<void>("call1"),
-                          wasm_api::HostError);
-        EXPECT_TRUE(reentrance_hit);
-    }
+    ERROR_GUARD
+    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
+                      wasm_api::ErrorType::HostError);
+    EXPECT_TRUE(reentrance_hit);
+}
 
 TEST_P(ExternalCallTest, null_handling)
 {

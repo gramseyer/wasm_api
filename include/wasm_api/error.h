@@ -21,6 +21,12 @@
 namespace wasm_api
 {
 
+enum class ErrorType {
+    None = 0,
+    HostError = 1,
+    UnrecoverableSystemError = 2,
+};
+
 // calls to builtin fns from the wasm environment should
 // throw HostError
 struct HostError : public std::runtime_error

@@ -38,6 +38,7 @@ extern "C"
     bool wasmi_consume_gas(void* runtime_pointer, uint64_t gas_to_consume);
 
     uint64_t wasmi_get_available_gas(const void* runtime_pointer);
+    void wasmi_set_available_gas(void* runtime_pointer, uint64_t gas);
 
     void wasmi_link_nargs(void* runtime_pointer,
                           const uint8_t* module_bytes,
@@ -116,36 +117,46 @@ Wasmi_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
                          reinterpret_cast<const uint8_t*>(method_name.c_str()),
                          static_cast<uint32_t>(method_name.size()),
                          gas_limit);
+    
     switch (WasmiInvokeError(invoke_res.error))
     {
         case WasmiInvokeError::None:
-            return { invoke_res.result, gas_limit - invoke_res.gas_remaining };
+            return { invoke_res.result, gas_limit - invoke_res.gas_remaining, ErrorType::None };
         case WasmiInvokeError::WasmiError:
-            throw UnrecoverableSystemError("internal wasmi error");
+            // link errors here -- i.e. missing imports or malformed wasm or the like.
+            return {std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
         case WasmiInvokeError::InputError:
-            throw WasmError("invalid input fn name");
+            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };            
+           // throw WasmError("invalid input fn name");
         case WasmiInvokeError::FuncNExist:
-            throw WasmError("func nexist");
+            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            //throw WasmError("func nexist");
         case WasmiInvokeError::ReturnTypeError:
-            throw WasmError("output type error");
+            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            //throw WasmError("output type error");
         case WasmiInvokeError::CallError:
-            throw WasmError("call error");
+            // Error within wasm, or out of gas, or stack limit, or ...
+            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
+            //throw WasmError("call error");
         case WasmiInvokeError::HostError:
-            throw WasmError("propagating host error");
+            // propagating a HostError from a nested call
+            return { std::nullopt, gas_limit - invoke_res.gas_remaining, ErrorType::HostError };
         case WasmiInvokeError::UnrecoverableSystemError:
-            throw UnrecoverableSystemError("propagating unrecoverable error");
-    }
+            throw UnrecoverableSystemError("unrecoverable system error propagating from wasmi");
+    } 
 
     std::unreachable();
 }
 
-void
+bool
+__attribute__((warn_unused_result))
 Wasmi_WasmRuntime::consume_gas(uint64_t gas)
 {
     if (wasmi_consume_gas(runtime_pointer, gas))
     {
-        throw WasmError("gas limit exceeded");
+        return false;
     }
+    return true;
 }
 
 uint64_t
@@ -153,6 +164,13 @@ Wasmi_WasmRuntime::get_available_gas() const
 {
     return wasmi_get_available_gas(runtime_pointer);
 }
+
+void
+Wasmi_WasmRuntime::set_available_gas(uint64_t gas)
+{
+    wasmi_set_available_gas(runtime_pointer, gas);
+}
+
 
 void
 Wasmi_WasmRuntime::link_fn(std::string const& module_name,

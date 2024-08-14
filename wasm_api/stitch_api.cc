@@ -109,21 +109,40 @@ Stitch_WasmRuntime::invoke(std::string const& method_name, uint64_t gas_limit)
     switch (StitchInvokeError(invoke_res.error))
     {
         case StitchInvokeError::None:
-            return { invoke_res.result, gas_limit - available_gas };
+            return { invoke_res.result, gas_limit - available_gas , ErrorType::None};
         case StitchInvokeError::StitchError:
-            throw UnrecoverableSystemError("internal stitch error");
+            /**
+             * Occurs when the module fails to instantiate.
+             * As far as I can tell skimming the code, this is deterministic
+             * (i.e. lots of wasm validation checks), with the possibility of a panic
+             * occuring for nondeterministic errors (i.e. module.rs: line 159,
+             * unreachable() occurs if a wasm section has an unknown number,
+             * instead of returning an error).
+             */
+            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
         case StitchInvokeError::InputError:
-            throw WasmError("invalid input fn name");
+            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
+            //throw WasmError("invalid input fn name");
         case StitchInvokeError::FuncNExist:
-            throw WasmError("func nexist");
+            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
+
+            //throw WasmError("func nexist");
         case StitchInvokeError::ReturnTypeError:
-            throw WasmError("output type error");
+            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
+            //throw WasmError("output type error");
         case StitchInvokeError::WasmError:
-            throw WasmError("propagating wasm error");
+            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
+            //throw WasmError("propagating wasm error");
         case StitchInvokeError::CallError:
-            throw WasmError("error from call");
+            // Was intended to handle the case of an error within a host function
+            // propagating back out of stitch via e.g. catching a panic,
+            // but that just doesn't work in stitch.  So this case cannot happen.
+            //return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
+            std::unreachable();
         case StitchInvokeError::UnrecoverableSystemError:
-            throw UnrecoverableSystemError("propagating unrecoverable error");
+            // Likewise never actually occurs.
+            throw UnrecoverableSystemError("stitch propagating unrecoverable system error");
+            //return { std::nullopt, gas_limit - available_gas , ErrorType::UnrecoverableSystemError};
     }
 
     std::unreachable();
@@ -226,21 +245,29 @@ Stitch_WasmRuntime::link_fn(std::string const& module_name,
                       5);
 }
 
-void
+bool
+__attribute__((warn_unused_result))
 Stitch_WasmRuntime::consume_gas(uint64_t gas)
 {
     if (gas > available_gas)
     {
         available_gas = 0;
-        throw WasmError("gas limit exceeded");
+        return false;
     }
     available_gas -= gas;
+    return true;
 }
 
 uint64_t
 Stitch_WasmRuntime::get_available_gas() const
 {
     return available_gas;
+}
+
+void
+Stitch_WasmRuntime::set_available_gas(uint64_t gas)
+{
+    available_gas = gas;
 }
 
 } // namespace wasm_api

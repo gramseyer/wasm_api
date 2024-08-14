@@ -24,6 +24,23 @@
 
 using namespace wasm_api;
 
+template<typename value_t>
+void expect_res_eq(std::pair<std::optional<value_t>, M3Result> const& res, value_t const& val) {
+	EXPECT_TRUE(res.second == m3Err_none);
+	EXPECT_TRUE(res.first.has_value());
+
+	if (res.first.has_value())
+	{
+		EXPECT_EQ(*res.first, val);
+	}
+}
+
+// lol does this work
+void expect_res(auto const& res) {
+	EXPECT_TRUE(res.second == m3Err_none);
+	EXPECT_TRUE(res.first.has_value());
+}
+
 TEST(wasm3, call)
 {
 	wasm3::environment e;
@@ -34,13 +51,18 @@ TEST(wasm3, call)
 
 	auto r = e.new_runtime(65536, nullptr);
 
-	r->load(*m);
+	EXPECT_TRUE(r->load(*m));
 
 	auto f = r->find_function("add");
 
-	int32_t res = f.template call<int32_t>(15, 20);
-	EXPECT_EQ(res, 35);
+	ASSERT_TRUE(f.has_value());
+
+	expect_res_eq(f->template call<int32_t>(15, 20), 35);
+
+//	int32_t res = f.template call<int32_t>(15, 20);
+//	EXPECT_EQ(res, 35);
 }
+
 
 
 TEST(wasm3, set_memory)
@@ -49,35 +71,43 @@ TEST(wasm3, set_memory)
 	auto c = ::test::load_wasm_from_file("tests/wat/test_set_memory.wasm");
 
 	auto m = e.parse_module(c->data(), c->size());
-
 	auto r = e.new_runtime(65536, nullptr);
 
-	r->load(*m);
+	ASSERT_TRUE(!!m);
+	ASSERT_TRUE(!!r);
+
+	ASSERT_TRUE(r->load(*m));
 
 	auto sz = r->find_function("size");
 
-	EXPECT_TRUE(sz.template call<int32_t>() == 1);
+	expect_res_eq(sz->template call<int32_t>(), 1);
 
 	auto store = r->find_function("store");
 
-	store.call(0, 0x12345678);
+	expect_res(store->call(0, 0x12345678));
 
-	store.call(4, 0xABCDEF90);
+	expect_res(store->call(4, 0xABCDEF90));
 
 	auto load = r->find_function("load");
 
-	uint32_t mem0 = load.template call<int32_t>(0);
+	ASSERT_TRUE(load.has_value());
 
-	EXPECT_TRUE(mem0 == 0x12345678);
+	auto mem0 = load->template call<int32_t>(0);
+
+	expect_res_eq(mem0, 0x12345678);
 
 	auto load8 = r->find_function("load8");
 
-	EXPECT_TRUE(load8.template call<int32_t>(0) == 0x78);
-	EXPECT_TRUE(load8.template call<int32_t>(1) == 0x56);
+	ASSERT_TRUE(load8.has_value());
+
+	expect_res_eq(load8->template call<int32_t>(0), 0x78);
+	expect_res_eq(load8->template call<int32_t>(1), 0x56);
 
 	auto load16 = r->find_function("load16");
 
-	EXPECT_TRUE(load16.template call<int32_t>(3) == 0x9012);
+	ASSERT_TRUE(load16.has_value());
+
+	expect_res_eq(load16->template call<int32_t>(3), 0x9012);
 
 	auto [mem_ptr, mlen] = r->get_memory();
 
@@ -88,4 +118,4 @@ TEST(wasm3, set_memory)
 	buf[1] = 0xABCDEF90;
 
 	EXPECT_TRUE(0 == memcmp(mem_ptr, (uint8_t*)buf, 8));
-}
+} 

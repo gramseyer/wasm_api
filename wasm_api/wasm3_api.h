@@ -112,8 +112,11 @@ public:
     // This version of WasmRuntime requires the wasm to be instrumented
     // with calls to a "consume gas" function.  Host functions
     // should also call into this, as necessary.
-    void consume_gas(uint64_t gas) override;
+    bool
+    __attribute__((warn_unused_result))
+    consume_gas(uint64_t gas) override;
 
+    void set_available_gas(uint64_t gas) override;
     uint64_t get_available_gas() const override;
 
 private:
