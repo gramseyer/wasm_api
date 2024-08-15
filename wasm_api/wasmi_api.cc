@@ -143,9 +143,9 @@ Wasmi_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_lim
             return { std::nullopt, invoke_res.gas_consumed, ErrorType::HostError };
         case WasmiInvokeError::UnrecoverableSystemError:
             throw UnrecoverableSystemError("unrecoverable system error propagating from wasmi");
-    } 
+    }
 
-    std::unreachable();
+    throw UnrecoverableSystemError("impossible");
 }
 
 bool

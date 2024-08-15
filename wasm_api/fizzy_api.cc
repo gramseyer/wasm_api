@@ -43,7 +43,7 @@ fizzy_trampoline_0args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 FizzyExecutionResult
@@ -70,7 +70,7 @@ fizzy_trampoline_1args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 FizzyExecutionResult
@@ -97,7 +97,7 @@ fizzy_trampoline_2args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 FizzyExecutionResult
@@ -125,7 +125,7 @@ fizzy_trampoline_3args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 FizzyExecutionResult
@@ -153,7 +153,7 @@ fizzy_trampoline_4args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 FizzyExecutionResult
@@ -181,7 +181,7 @@ fizzy_trampoline_5args(void *host_ctx, FizzyInstance *instance,
                                 .value = out};
   }
   // other errors result in std::terminate
-  std::unreachable();
+  std::terminate();
 }
 
 Fizzy_WasmContext::Fizzy_WasmContext(uint32_t max_stack_bytes)
@@ -441,7 +441,6 @@ get_trampoline_fn(size_t args)
   default:
     std::terminate();
   }
-  std::unreachable();
 }
 
 FizzyImportedFunction

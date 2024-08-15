@@ -138,14 +138,14 @@ Stitch_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_li
             // propagating back out of stitch via e.g. catching a panic,
             // but that just doesn't work in stitch.  So this case cannot happen.
             //return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-            std::unreachable();
+            std::terminate();
         case StitchInvokeError::UnrecoverableSystemError:
             // Likewise never actually occurs.
             throw UnrecoverableSystemError("stitch propagating unrecoverable system error");
             //return { std::nullopt, gas_limit - available_gas , ErrorType::UnrecoverableSystemError};
     }
 
-    std::unreachable();
+    throw UnrecoverableSystemError("impossible");
 }
 
 void

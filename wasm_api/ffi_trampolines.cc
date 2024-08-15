@@ -53,7 +53,6 @@ extern "C"
         {
             return detail::error(TrampolineError_UNRECOVERABLE);
         }
-        std::unreachable();
     }
 
     TrampolineResult c_call_1args(void* function_pointer,
