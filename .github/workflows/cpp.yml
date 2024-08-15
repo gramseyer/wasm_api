@@ -16,7 +16,7 @@ jobs:
       with: 
         submodules: "recursive"
     - name: install packages
-      run: sudo apt-get install -y git g++-13 autoconf libtool pkg-config wabt
+      run: sudo apt-get install -y git g++-14 autoconf libtool pkg-config wabt gtest
     - name: install catch2
       run: git clone https://github.com/catchorg/Catch2.git && cd Catch2 && cmake -Bbuild -H. -DBUILD_TESTING=OFF && sudo cmake --build build/ --target install -j
     - name: autogen
