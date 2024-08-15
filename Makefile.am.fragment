@@ -6,7 +6,6 @@ wasm_api_LIBS = \
 	%reldir%/wasmi_lib/target/release/libwasmi_lib.a \
 	%reldir%/fizzy/build/lib/libfizzy.a 
 
-
 WASM3_SRCS = \
 	%reldir%/wasm3/source/m3_api_libc.c \
 	%reldir%/wasm3/source/m3_api_meta_wasi.c \
@@ -32,6 +31,8 @@ wasm_api_SRCS = \
 	%reldir%/wasm_api/stitch_api.cc \
 	%reldir%/wasm_api/ffi_trampolines.cc \
 	%reldir%/wasm_api/fizzy_api.cc
+
+$(wasm_api_SRCS:.cc=.o) : %reldir%/fizzy/build/lib/libfizzy.a
 
 wasm_api_TEST_SRCS = \
 	%reldir%/tests/wasm3_test.cc \
