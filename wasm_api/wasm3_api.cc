@@ -87,7 +87,13 @@ Wasm3_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_lim
     	return {std::nullopt, consumed_gas, ErrorType::HostError};
     }
 
-    std::unreachable(); // m3Err_unrecoverableSystemError should have thrown from within the wasm3 api
+    // m3Err_unrecoverableSystemError should have thrown from within the wasm3 api
+    #if __cpp_lib_unreachable >= 202202L
+        std::unreachable(); 
+    #else
+        std::terminate();
+    #endif
+
 }
 
 bool
