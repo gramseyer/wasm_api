@@ -83,11 +83,20 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
     return false;
   }
 
+  bool terminate_on_syserror_shame() {
+    if (GetParam() == wasm_api::SupportedWasmEngine::FIZZY) {
+        std::printf("SHAME: I haven't bothered forking Fizzy to support different kinds of error signaling\n");
+        return true;
+    }
+    return false;
+  }
+
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
 };
 
 #define ERROR_GUARD if (no_error_handling_shame()) return;
+#define UNRECOVERABLEGUARD if (terminate_on_syserror_shame()) return;
 
 TEST_P(ExternalCallTest, unlinked_fn)
 {
@@ -100,6 +109,7 @@ TEST_P(ExternalCallTest, runtime_error)
     runtime->template link_fn<&throw_runtime_error>("test",
                                                         "external_call");
     ERROR_GUARD
+    UNRECOVERABLEGUARD
     EXPECT_THROW(runtime->template invoke<void>("call1"),
                           wasm_api::UnrecoverableSystemError);
 }
@@ -118,6 +128,7 @@ TEST_P(ExternalCallTest, other_weird_error)
 {
     runtime->template link_fn<&throw_bad_alloc>("test", "external_call");
     ERROR_GUARD
+    UNRECOVERABLEGUARD
     EXPECT_THROW(runtime->template invoke<void>("call1"),
                       wasm_api::UnrecoverableSystemError);
 }
@@ -164,6 +175,7 @@ TEST_P(ExternalCallTest, null_handling)
 INSTANTIATE_TEST_SUITE_P(AllEngines, ExternalCallTest,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
                             wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                            wasm_api::SupportedWasmEngine::WASMI));
+                            wasm_api::SupportedWasmEngine::WASMI,
+                            wasm_api::SupportedWasmEngine::FIZZY));
 
 
