@@ -82,17 +82,16 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
+    ASSERT_TRUE(ctx->link_fn("test", "arg0", &arity0));
+    ASSERT_TRUE(ctx->link_fn("test", "arg1", &arity1));
+    ASSERT_TRUE(ctx->link_fn("test", "arg2", &arity2));
+    ASSERT_TRUE(ctx->link_fn("test", "arg3", &arity3));
+    ASSERT_TRUE(ctx->link_fn("test", "arg4", &arity4));
+    ASSERT_TRUE(ctx->link_fn("test", "arg5", &arity5));
+
     runtime = ctx->new_runtime_instance(s, nullptr);
 
     ASSERT_TRUE(!!runtime);
-
-    runtime->link_fn("test", "arg0", &arity0);
-    runtime->link_fn("test", "arg1", &arity1);
-    runtime->link_fn("test", "arg2", &arity2);
-    runtime->link_fn("test", "arg3", &arity3);
-    runtime->link_fn("test", "arg4", &arity4);
-    runtime->link_fn("test", "arg5", &arity5);
-
   }
 
   std::unique_ptr<WasmContext> ctx;

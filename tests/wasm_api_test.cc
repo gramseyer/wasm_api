@@ -82,17 +82,13 @@ reentrance(HostCallContext* ctxp)
 class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
  protected:
   void SetUp() override {
-    auto c = load_wasm_from_file("tests/wat/test_error_handling.wasm");
+    contract = load_wasm_from_file("tests/wat/test_error_handling.wasm");
 
-    Script s {.data = c->data(), .len = c->size()};
+    script =  Script {.data = contract->data(), .len = contract->size()};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
-    runtime = ctx->new_runtime_instance(s);
-
-    ASSERT_TRUE(!!runtime);
-
-    ASSERT_TRUE(runtime->template link_fn("test", "good_call", &good_call));
+    ASSERT_TRUE(ctx->link_fn("test", "good_call", &good_call));
   }
 
   bool no_error_handling_shame() {
@@ -107,6 +103,9 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
     return false;
   }
 
+  std::unique_ptr<std::vector<uint8_t>> contract;
+  Script script;
+
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
 };
@@ -116,16 +115,22 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
 TEST_P(ExternalCallTest, unlinked_fn)
 {
-    auto res = runtime ->invoke("call1");
-    ASSERT_FALSE(!!res.result);
-    EXPECT_EQ(res.result.error(), InvokeError::DETERMINISTIC_ERROR);
+    runtime = ctx -> new_runtime_instance(script);
+    
+    // either runtime == nullptr, or error later is allowed
+    if (runtime) {
+        auto res = runtime ->invoke("call1");
+        ASSERT_FALSE(!!res.result);
+        EXPECT_EQ(res.result.error(), InvokeError::DETERMINISTIC_ERROR);
+    }
 }
 
 TEST_P(ExternalCallTest, runtime_error)
 {
-    runtime->link_fn("test",
-                                                        "external_call",
-                                                        &throw_runtime_error);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_runtime_error));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
+
     ERROR_GUARD
     UNRECOVERABLEGUARD
     auto res = runtime -> invoke("call1");
@@ -136,7 +141,10 @@ TEST_P(ExternalCallTest, runtime_error)
 
 TEST_P(ExternalCallTest, host_error)
 {
-    runtime->link_fn("test", "external_call", &throw_host_error);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_host_error));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
+    
     ERROR_GUARD
 
     auto res = runtime -> invoke("call1");
@@ -146,7 +154,10 @@ TEST_P(ExternalCallTest, host_error)
 
 TEST_P(ExternalCallTest, other_weird_error)
 {
-    runtime->link_fn("test", "external_call", &throw_bad_alloc);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_bad_alloc));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
+
     ERROR_GUARD
     UNRECOVERABLEGUARD
     auto res = runtime -> invoke("call1");
@@ -158,7 +169,9 @@ TEST_P(ExternalCallTest, other_weird_error)
 TEST_P(ExternalCallTest, wasm_error)
 {
     // link all the fns, required for MAKEPAD_STITCH
-    runtime->link_fn("test", "external_call", &good_call);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &good_call));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
 
     auto res = runtime -> invoke("unreachable");
     ASSERT_FALSE(!!res.result);
@@ -167,7 +180,9 @@ TEST_P(ExternalCallTest, wasm_error)
 
 TEST_P(ExternalCallTest, follow_bad_with_good)
 {
-    runtime->link_fn("test", "external_call", &throw_host_error);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_host_error));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
     auto res = runtime -> invoke("call1");
@@ -180,7 +195,10 @@ TEST_P(ExternalCallTest, follow_bad_with_good)
 
 TEST_P(ExternalCallTest, reentrance)
 {
-    runtime->link_fn("test", "external_call", &reentrance);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &reentrance));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
+
     s_runtime = runtime.get();
 
     ERROR_GUARD
@@ -194,7 +212,9 @@ TEST_P(ExternalCallTest, reentrance)
 
 TEST_P(ExternalCallTest, nonzero_return)
 {
-    runtime->link_fn("test", "external_call", &nonzero_return);
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &nonzero_return));
+    runtime = ctx -> new_runtime_instance(script);
+    ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
 

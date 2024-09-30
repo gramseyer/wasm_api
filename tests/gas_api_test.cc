@@ -32,18 +32,17 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
  protected:
   void SetUp() override {
     // this wasm just invokes an external call.  I'm sort of abusing it here.
-    auto c = load_wasm_from_file("tests/wat/test_error_handling.wasm");
+    contract = load_wasm_from_file("tests/wat/test_error_handling.wasm");
 
-    Script s {.data = c->data(), .len = c->size()};
+    script = Script{.data = contract->data(), .len = contract->size()};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
-    runtime = ctx->new_runtime_instance(s);
+    ASSERT_TRUE(ctx->link_fn("test", "good_call", &consume_gas_call2)); // called by "call2"
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &consume_gas_call)); // called by "call1"
 
+    runtime = ctx -> new_runtime_instance(script);
     ASSERT_TRUE(!!runtime);
-
-    ASSERT_TRUE(runtime->template link_fn("test", "good_call", &consume_gas_call2)); // called by "call2"
-    ASSERT_TRUE(runtime->template link_fn("test", "external_call", &consume_gas_call)); // called by "call1"
   }
 
   bool no_error_handling_shame() {
@@ -53,6 +52,9 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
     }
     return false;
   }
+
+  std::unique_ptr<std::vector<uint8_t>> contract;
+  Script script;
 
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;

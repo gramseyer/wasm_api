@@ -53,6 +53,13 @@ struct MeteredReturn {
   uint64_t gas_consumed;
 };
 
+struct DefaultLinkEntry {
+    std::string module_name;
+    std::string fn_name;
+    void* fn;
+    uint8_t nargs;
+};
+
 class WasmRuntimeImpl;
 class WasmContextImpl {
 public:
@@ -61,10 +68,28 @@ public:
 
   virtual ~WasmContextImpl() {}
 
+  // Expected function signature: HostFnStatus<uint64_t>(HostCallContext*, nargs repeated uint64)
+  virtual bool link_fn_nargs(std::string const& module_name,
+    std::string const& fn_name,
+    void* fn,
+    uint8_t nargs) {
+        link_entries.emplace_back(
+            module_name,
+            fn_name,
+            fn,
+            nargs);
+    return true;
+  }
+
+  virtual bool finish_link(std::unique_ptr<WasmRuntime>& pre_link);
+
 protected:
   WasmContextImpl() = default;
 
 private:
+
+  std::vector<DefaultLinkEntry> link_entries;
+
   WasmContextImpl(WasmContextImpl const &) = delete;
   WasmContextImpl(WasmContextImpl &&) = delete;
 };
@@ -74,12 +99,6 @@ public:
   virtual std::span<std::byte> get_memory() = 0;
   virtual std::span<const std::byte> get_memory() const = 0;
 
-  // Expected function signature: HostFnStatus<uint64_t>(HostCallContext*, nargs repeated uint64)
-  virtual bool link_fn_nargs(std::string const& module_name,
-    std::string const& fn_name,
-    void* fn,
-    uint8_t nargs) = 0;
-
   virtual InvokeStatus<uint64_t> invoke(std::string const &method_name) = 0;
 
   virtual bool __attribute__((warn_unused_result))
@@ -87,6 +106,11 @@ public:
 
   virtual uint64_t get_available_gas() const = 0;
   virtual void set_available_gas(uint64_t gas) = 0;
+
+  virtual bool link_fn_nargs(std::string const& module_name,
+    std::string const& fn_name,
+    void* fn,
+    uint8_t nargs) = 0;
 
   virtual ~WasmRuntimeImpl() {}
 
@@ -123,6 +147,18 @@ public:
 
   ~WasmContext();
 
+  template<std::same_as<uint64_t>... Args>
+  bool link_fn(std::string const& module_name, std::string const& fn_name,
+               HostFnStatus<uint64_t> (*f)(HostCallContext *, Args...))
+  {
+    if (!impl) {
+        return false;
+    }
+    return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
+                         (kArgCount<Args>() + ... + 0));
+  }
+
+
 private:
   detail::WasmContextImpl *impl;
 
@@ -130,6 +166,8 @@ private:
   WasmContext(WasmContext &&) = delete;
   WasmContext &operator=(const WasmContext &) = delete;
   WasmContext &operator=(WasmContext &&) = delete;
+
+  template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };
 
 class WasmRuntime {
@@ -151,15 +189,13 @@ public:
   detail::MeteredReturn invoke(std::string const &method_name,
                                uint64_t gas_limit = UINT64_MAX);
 
-  template<std::same_as<uint64_t>... Args>
-  bool link_fn(std::string const& module_name, std::string const& fn_name,
-               HostFnStatus<uint64_t> (*f)(HostCallContext *, Args...))
+  bool link_fn(detail::DefaultLinkEntry const& entry)
   {
     if (!impl) {
         return false;
     }
-    return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
-                         (kArgCount<Args>() + ... + 0));
+    return impl -> link_fn_nargs(entry.module_name, entry.fn_name, reinterpret_cast<void *>(entry.fn),
+        entry.nargs);
   }
 
   std::span<std::byte> get_memory();

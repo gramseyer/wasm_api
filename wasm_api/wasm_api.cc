@@ -18,7 +18,7 @@
 
 #include "wasm_api/stitch_api.h"
 #include "wasm_api/wasm3_api.h"
-//#include "wasm_api/wasmi_api.h"
+#include "wasm_api/wasmi_api.h"
 #include "wasm_api/fizzy_api.h"
 
 #include <string.h>
@@ -37,8 +37,8 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                 return new Wasm3_WasmContext(MAX_STACK_BYTES);
             case SupportedWasmEngine::MAKEPAD_STITCH:
                 return new Stitch_WasmContext();
-          //  case SupportedWasmEngine::WASMI:
-          //      return new Wasmi_WasmContext(MAX_STACK_BYTES);
+            case SupportedWasmEngine::WASMI:
+                return new Wasmi_WasmContext(MAX_STACK_BYTES);
             case SupportedWasmEngine::FIZZY:
                 return new Fizzy_WasmContext(MAX_STACK_BYTES);
             default:
@@ -54,11 +54,14 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     {
         return nullptr;
     }
-    if (impl) {
-        return impl->new_runtime_instance(contract, ctxp);
+    if (!impl) {
+        return nullptr;
     }
-    std::printf("failed to set impl\n");
-    return nullptr;
+    auto pre_link = impl->new_runtime_instance(contract, ctxp);
+    if (!impl -> finish_link(pre_link)) {
+        return nullptr;
+    }
+    return pre_link;
 }
 
 WasmContext::~WasmContext()
@@ -68,6 +71,21 @@ WasmContext::~WasmContext()
         delete impl;
     }
     impl = nullptr;
+}
+
+namespace detail {
+bool 
+WasmContextImpl::finish_link(std::unique_ptr<WasmRuntime>& pre_link)
+{ 
+    for (auto const& entry : link_entries)
+    {
+        if (!pre_link -> link_fn(entry))
+        {
+            return false;
+        }
+    }
+    return true;
+}
 }
 
 WasmRuntime::WasmRuntime(void* ctxp)

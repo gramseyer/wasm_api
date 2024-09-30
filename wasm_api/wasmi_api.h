@@ -5,6 +5,8 @@
 namespace wasm_api
 {
 
+typedef void* WasmiContextPtr;
+
 class Wasmi_WasmRuntime;
 
 class Wasmi_WasmContext : public detail::WasmContextImpl
@@ -17,53 +19,36 @@ public:
     std::unique_ptr<WasmRuntime> new_runtime_instance(Script const& contract,
                                                       void* ctxp);
 
+    // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64_t repeated nargs)
+    bool link_fn_nargs(std::string const& module_name,
+        std::string const& fn_name,
+        void* fn,
+        uint8_t nargs) override;
+
+    bool finish_link(std::unique_ptr<WasmRuntime>& pre_link) {return true;}
+
 private:
-    void* context_pointer;
+    WasmiContextPtr context_pointer;
 };
 
 class Wasmi_WasmRuntime : public detail::WasmRuntimeImpl
 {
 public:
-    Wasmi_WasmRuntime(Script const& data,
-                      void* context_pointer,
-                      HostCallContext* host_call_context);
+    Wasmi_WasmRuntime(void* wasmi_runtime_ptr);
 
     ~Wasmi_WasmRuntime();
 
-    std::pair<uint8_t*, uint32_t> get_memory() override;
-    std::pair<const uint8_t*, uint32_t> get_memory() const override;
+    std::span<std::byte> get_memory() override;
+    std::span<const std::byte> get_memory() const override;
 
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) override;
-    void link_fn(
-        std::string const& module_name,
+    bool link_fn_nargs(std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override;
+        void* fn,
+        uint8_t nargs) override {
+        return false;
+    }
 
-    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
-                                           const uint64_t gas_limit) override final;
+    InvokeStatus<uint64_t> invoke(std::string const &method_name);
 
     bool 
     __attribute__((warn_unused_result))

@@ -39,17 +39,20 @@ class UserCtxTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngi
 
  protected:
   void SetUp() override {
-    auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
+    contract = load_wasm_from_file("tests/wat/test_invoke.wasm");
 
-    Script s {.data = c->data(), .len = c->size()};
+    script = Script{.data = contract->data(), .len = contract->size()};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
-    
-    runtime = ctx->new_runtime_instance(s, ctx_check);
-    ASSERT_TRUE(!!runtime);
 
-    ASSERT_TRUE(runtime->link_fn("test", "redir_call", &foo));
+    ASSERT_TRUE(ctx->link_fn("test", "redir_call", &foo));
+    runtime = ctx -> new_runtime_instance(script, ctx_check);
+
+    ASSERT_TRUE(!!runtime);
   }
+
+  std::unique_ptr<std::vector<uint8_t>> contract;
+  Script script;
 
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
