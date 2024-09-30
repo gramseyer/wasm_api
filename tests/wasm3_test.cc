@@ -27,7 +27,6 @@ using namespace wasm_api;
 void expect_res_eq(InvokeStatus<uint64_t> res, uint64_t const& val) {
 	ASSERT_TRUE(!!res);
 	EXPECT_EQ(*res, val);
-	std::printf("%llx %llx comparison\n", *res, val);
 }
 
 // lol does this work

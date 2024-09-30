@@ -41,7 +41,8 @@ wasm_api_TEST_SRCS = \
 	%reldir%/tests/userctx_tests.cc \
 	%reldir%/tests/gas_api_test.cc \
 	%reldir%/tests/instantiate_tests.cc \
-	%reldir%/tests/invoke_arity_tests.cc
+	%reldir%/tests/invoke_arity_tests.cc \
+	%reldir%/tests/return_test.cc
 
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
 $(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/. -I %reldir%/fizzy/build/include/
@@ -52,7 +53,8 @@ WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_error_handling.wat \
 	%reldir%/tests/wat/test_set_memory.wat \
 	%reldir%/tests/wat/test_invoke.wat \
-	%reldir%/tests/wat/test_invoke_arity.wat
+	%reldir%/tests/wat/test_invoke_arity.wat \
+	%reldir%/tests/wat/test_return.wat
 
 wasm_api_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
 

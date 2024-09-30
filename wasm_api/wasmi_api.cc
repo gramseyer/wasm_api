@@ -78,7 +78,6 @@ Wasmi_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
         contract.len, out -> get_host_call_context(), context_pointer);
 
     if (wasmi_runtime_ptr == nullptr) {
-        std::printf("failed\n");
         return nullptr;
     }
 
