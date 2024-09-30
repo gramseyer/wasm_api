@@ -1,6 +1,5 @@
 use makepad_stitch::{Engine, Linker, Module, Store, Instance, Func};
 
-use std::rc::Rc;
 use std::slice;
 use core::ffi::c_void;
 
@@ -23,7 +22,6 @@ impl Stitch_WasmContext {
 
 #[allow(non_camel_case_types)]
 pub struct Stitch_WasmRuntime {
-    _context : Rc<Stitch_WasmContext>, // keep alive reference to context
     module : Module,
     store : Store,
     linker: Linker,
@@ -35,11 +33,15 @@ pub struct Stitch_WasmRuntime {
 // impl UnwindSafe for Stitch_WasmRuntime {}
 // impl RefUnwindSafe for Stitch_WasmRuntime {}
 
-enum TrampolineError {
-    None = 0,
-    HostError = 1,
-    UnrecoverableSystemError = 2,
+#[allow(non_camel_case_types)]
+#[repr(u8)]
+enum HostFnError {
+    NONE_OR_RECOVERABLE = 0,
+    RETURN_SUCCESS = 1, // technically "success", but terminates the caller wasm instance
+    OUT_OF_GAS = 2,
+    UNRECOVERABLE = 3,
 }
+
 
 #[repr(C)]
 pub struct TrampolineResult {
@@ -67,25 +69,24 @@ unsafe impl Sync for AnnoyingBorrowBypass {}
 
 fn handle_trampoline_error(panic : u8) {
     match unsafe {std::mem::transmute(panic)} {
-        TrampolineError::None => (),
-        TrampolineError::HostError => { panic!("HostError"); },
-        _ => { panic!("UnrecoverableSystemError"); },
+        HostFnError::NONE_OR_RECOVERABLE => (),
+        HostFnError::RETURN_SUCCESS => { panic!("Return success"); },
+        HostFnError::OUT_OF_GAS => { panic!("out of gas"); },
+        _ => {panic!("Unrecoverable") },
     }
 }
 
 impl Stitch_WasmRuntime {
-    pub fn new(context: &Rc<Stitch_WasmContext>, bytes : &[u8], userctx : *mut c_void) -> Stitch_WasmRuntime {
+    pub fn new(context: &Stitch_WasmContext, bytes : &[u8], userctx : *mut c_void) -> Option<Stitch_WasmRuntime> {
         let store = Store::new(context.engine.clone());
-        let module = Module::new(store.engine(), &bytes).unwrap();
-        //let instance = Linker::new().instantiate(&mut store, &module).unwrap();
-        Self {
-            _context : context.clone(),
+        let module = Module::new(store.engine(), &bytes).ok()?;
+        Some(Self {
             module : module,
             store : store,
             linker: Linker::new(),
             userctx : userctx,
             instance : None
-        }
+        })
     }
     pub fn lazy_link(&mut self) -> Result<(), makepad_stitch::Error>{
         match self.instance {
@@ -242,8 +243,7 @@ enum StitchInvokeError {
     InputError = 3, // input validation fails
     ReturnTypeError = 4,
     WasmError = 5,
-    CallError = 6,
-    UnrecoverableSystemError = 7
+    UnrecoverableSystemError = 6
 }
 
 #[repr(C)]
@@ -305,16 +305,16 @@ pub extern "C" fn stitch_link_nargs(
     method_name : *const u8,
     method_name_len : u32,
     function_pointer: *mut c_void,
-    nargs : u8)
+    nargs : u8) -> bool
 {
     let module = match string_from_parts(module_name, module_name_len) {
         Ok(x) => x,
-        _ => {return;}
+        _ => {return false;}
     };
 
     let method = match string_from_parts(method_name, method_name_len) {
         Ok(x) => x,
-        _ => {return;}
+        _ => {return false;}
     };
 
     let r = unsafe {&mut *runtime};
@@ -326,8 +326,9 @@ pub extern "C" fn stitch_link_nargs(
         3 => {r.link_function_3args(function_pointer, &module, &method); },
         4 => {r.link_function_4args(function_pointer, &module, &method); },
         5 => {r.link_function_5args(function_pointer, &module, &method); },
-        _ => {()},
+        _ => {return false; },
     }
+    return true;
 }
 
 #[no_mangle]
@@ -355,77 +356,76 @@ pub extern "C" fn stitch_invoke(runtime : *mut Stitch_WasmRuntime, bytes: *const
     i'm so mad
     */
 
-    //match std::panic::catch_unwind(|| {
-        let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
+    let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
-        let string = match std::str::from_utf8(&slice) {
-            Ok(v) => v,
-            _ => return StitchInvokeResult { result : 0, error : StitchInvokeError::InputError as u32 }
-        };
+    let string = match std::str::from_utf8(&slice) {
+        Ok(v) => v,
+        _ => return StitchInvokeResult { result : 0, error : StitchInvokeError::InputError as u32 }
+    };
 
-        let r = unsafe {&mut *runtime};
+    let r = unsafe {&mut *runtime};
 
-        match r.lazy_link() {
-            Ok(_) => {},
-            Err(_) => { return StitchInvokeResult {result : 0, error : StitchInvokeError::StitchError as u32 }; },
-        };
+    match r.lazy_link() {
+        Ok(_) => {},
+        Err(_) => { return StitchInvokeResult {result : 0, error : StitchInvokeError::StitchError as u32 }; },
+    };
 
-        let func = match r.instance.as_mut().expect("lazily linked").exported_func(string) {
-            Some(v) => v,
-            _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::FuncNExist as u32 }; }
-        };
+    let func = match r.instance.as_mut().expect("lazily linked").exported_func(string) {
+        Some(v) => v,
+        _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::FuncNExist as u32 }; }
+    };
 
-        let mut res = [Val::I64(0)];
+    let mut res = [Val::I64(0)];
 
-        match func.call(&mut r.store, &[], &mut res) {
-            Ok(_) => { 
-                match res[0].to_i64() {
-                    Some(v) => {return StitchInvokeResult { result : v as u64, error : StitchInvokeError::None as u32 }; },
-                    _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::ReturnTypeError as u32 }; },
-                }
-            },
-            /*
-             * 
-             * Errors here are mismatched function types,
-             * or anything that comes out of executing wasm.
-             * My (limited) understanding from skimmimg the codebase
-             * is that errors would be from (legitimate, deterministic) wasm errors,
-             * and that allocation errors (the only source of nondeterminism of which I am aware, in this codebase)
-             * just become rust panic()s.
-             * 
-             * But additional checks on the type of the returned error could be applied, if necessary.
-             */
-            Err(_) => {return StitchInvokeResult { result : 0, error : StitchInvokeError::WasmError as u32};}
-        };
-   /* }) {
-        Ok(v) => { return v; },
-        Err(_) => {
-            return InvokeResult { result : 0, error : InvokeError::CallError as u32 };
+    match func.call(&mut r.store, &[], &mut res) {
+        Ok(_) => { 
+            match res[0].to_i64() {
+                Some(v) => {return StitchInvokeResult { result : v as u64, error : StitchInvokeError::None as u32 }; },
+                _ => { return StitchInvokeResult { result : 0, error : StitchInvokeError::ReturnTypeError as u32 }; },
+            }
         },
-    } */
+        /*
+         * 
+         * Errors here are mismatched function types,
+         * or anything that comes out of executing wasm.
+         * My (limited) understanding from skimmimg the codebase
+         * is that errors would be from (legitimate, deterministic) wasm errors,
+         * and that allocation errors (the only source of nondeterminism of which I am aware, in this codebase)
+         * just become rust panic()s.
+         * 
+         * But additional checks on the type of the returned error could be applied, if necessary.
+         */
+        Err(_) => {return StitchInvokeResult { result : 0, error : StitchInvokeError::WasmError as u32};}
+    };
 }
 
 #[no_mangle]
-pub extern "C" fn new_stitch_context() -> *mut Rc<Stitch_WasmContext> {
-    let b = Box::new(Rc::<Stitch_WasmContext>::new(Stitch_WasmContext::new()));
+pub extern "C" fn new_stitch_context() -> *mut Stitch_WasmContext {
+    let b = Box::new(Stitch_WasmContext::new());
 
     return Box::into_raw(b);
 }
 
 #[no_mangle]
-pub extern "C" fn free_stitch_context(p : *mut Rc<Stitch_WasmContext>) {
+pub extern "C" fn free_stitch_context(p : *mut Stitch_WasmContext) {
 
     unsafe { drop(Box::from_raw(p)); }
 }
 
 #[no_mangle]
-pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Rc<Stitch_WasmContext>, userctx : *mut c_void) -> *mut Stitch_WasmRuntime
+pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context : *mut Stitch_WasmContext, userctx : *mut c_void) -> *mut Stitch_WasmRuntime
 {
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
-    let b = Box::new(Stitch_WasmRuntime::new( unsafe {&*context}, &slice, userctx));
-
-    return Box::into_raw(b);
+    match Stitch_WasmRuntime::new( unsafe{&*context}, &slice, userctx) {
+        Some(r) => {
+            let b = Box::new(r);
+            return Box::into_raw(b);
+        },
+        None => {
+            return core::ptr::null_mut();
+        }
+    }
 }
 
 #[no_mangle]

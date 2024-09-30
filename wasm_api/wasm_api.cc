@@ -16,7 +16,7 @@
 
 #include "wasm_api/wasm_api.h"
 
-//#include "wasm_api/stitch_api.h"
+#include "wasm_api/stitch_api.h"
 #include "wasm_api/wasm3_api.h"
 //#include "wasm_api/wasmi_api.h"
 #include "wasm_api/fizzy_api.h"
@@ -35,8 +35,8 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
         {
             case SupportedWasmEngine::WASM3:
                 return new Wasm3_WasmContext(MAX_STACK_BYTES);
-          //  case SupportedWasmEngine::MAKEPAD_STITCH:
-          //      return new Stitch_WasmContext();
+            case SupportedWasmEngine::MAKEPAD_STITCH:
+                return new Stitch_WasmContext();
           //  case SupportedWasmEngine::WASMI:
           //      return new Wasmi_WasmContext(MAX_STACK_BYTES);
             case SupportedWasmEngine::FIZZY:

@@ -52,46 +52,26 @@ public:
 
     ~Stitch_WasmRuntime();
 
-    std::pair<uint8_t*, uint32_t> get_memory() override;
-    std::pair<const uint8_t*, uint32_t> get_memory() const override;
+    std::span<std::byte> get_memory() override;
+    std::span<const std::byte> get_memory() const override;
 
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) override;
-    void link_fn(
-        std::string const& module_name,
+    // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64_t repeated nargs)
+    bool link_fn_nargs(std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override;
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override;
+        void* fn,
+        uint8_t nargs) override;
 
-    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
-                                           const uint64_t gas_limit) override;
+    InvokeStatus<uint64_t> invoke(std::string const &method_name);
 
     bool
     __attribute__((warn_unused_result))
     consume_gas(uint64_t gas) override;
     uint64_t get_available_gas() const override;
     void set_available_gas(uint64_t gas) override;
+
+    bool has_valid_runtime_pointer() const {
+        return runtime_pointer != nullptr;
+    }
 
 private:
     void* runtime_pointer;

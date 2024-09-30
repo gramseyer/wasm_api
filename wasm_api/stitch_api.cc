@@ -12,8 +12,7 @@ enum class StitchInvokeError : uint32_t
     InputError = 3, // input validation fails
     ReturnTypeError = 4,
     WasmError = 5,
-    CallError = 6,
-    UnrecoverableSystemError = 7
+    UnrecoverableSystemError = 6
 };
 
 struct StitchInvokeResult
@@ -31,7 +30,7 @@ extern "C"
                                      const uint8_t* method_bytes,
                                      const uint32_t method_len);
 
-    void stitch_link_nargs(void* runtime_pointer,
+    bool stitch_link_nargs(void* runtime_pointer,
                            const uint8_t* module_bytes,
                            const uint32_t module_bytes_len,
                            const uint8_t* method_bytes,
@@ -80,28 +79,31 @@ Stitch_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     auto* stitch_runtime = new Stitch_WasmRuntime(
         contract, context_pointer, out->get_host_call_context());
 
+    if (!stitch_runtime -> has_valid_runtime_pointer()) {
+        return nullptr;
+    }
+
     out->initialize(stitch_runtime);
 
     return out;
 }
 
-std::pair<uint8_t*, uint32_t>
+std::span<std::byte>
 Stitch_WasmRuntime::get_memory()
 {
     auto slice = ::stitch_get_memory(runtime_pointer);
-    return { slice.mem, slice.size };
+    return { reinterpret_cast<std::byte*>(slice.mem), slice.size};
 }
-std::pair<const uint8_t*, uint32_t>
+std::span<const std::byte>
 Stitch_WasmRuntime::get_memory() const
 {
     auto slice = ::stitch_get_memory(runtime_pointer);
-    return { slice.mem, slice.size };
+    return { reinterpret_cast<const std::byte*>(slice.mem), slice.size};
 }
 
-detail::MeteredReturn<uint64_t>
-Stitch_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_limit)
+InvokeStatus<uint64_t>
+Stitch_WasmRuntime::invoke(std::string const& method_name)
 {
-    available_gas = gas_limit;
     auto invoke_res
         = ::stitch_invoke(runtime_pointer,
                           reinterpret_cast<const uint8_t*>(method_name.c_str()),
@@ -109,7 +111,7 @@ Stitch_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_li
     switch (StitchInvokeError(invoke_res.error))
     {
         case StitchInvokeError::None:
-            return { invoke_res.result, gas_limit - available_gas , ErrorType::None};
+            return invoke_res.result;
         case StitchInvokeError::StitchError:
             /**
              * Occurs when the module fails to instantiate.
@@ -119,130 +121,32 @@ Stitch_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_li
              * unreachable() occurs if a wasm section has an unknown number,
              * instead of returning an error).
              */
-            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
         case StitchInvokeError::InputError:
-            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-            //throw WasmError("invalid input fn name");
         case StitchInvokeError::FuncNExist:
-            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-
-            //throw WasmError("func nexist");
         case StitchInvokeError::ReturnTypeError:
-            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-            //throw WasmError("output type error");
         case StitchInvokeError::WasmError:
-            return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-            //throw WasmError("propagating wasm error");
-        case StitchInvokeError::CallError:
-            // Was intended to handle the case of an error within a host function
-            // propagating back out of stitch via e.g. catching a panic,
-            // but that just doesn't work in stitch.  So this case cannot happen.
-            //return { std::nullopt, gas_limit - available_gas , ErrorType::HostError};
-            std::terminate();
+            return InvokeStatus<uint64_t>(std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR);
         case StitchInvokeError::UnrecoverableSystemError:
-            // Likewise never actually occurs.
-            throw UnrecoverableSystemError("stitch propagating unrecoverable system error");
-            //return { std::nullopt, gas_limit - available_gas , ErrorType::UnrecoverableSystemError};
+            return InvokeStatus<uint64_t>(std::unexpect_t{}, InvokeError::UNRECOVERABLE);
     }
 
-    throw UnrecoverableSystemError("impossible");
+    throw std::runtime_error("impossible");
 }
 
-void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
-                            std::string const& fn_name,
-                            uint64_t (*f)(HostCallContext*))
-{
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      0);
-}
-
-void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
-                            std::string const& fn_name,
-                            uint64_t (*f)(HostCallContext*, uint64_t))
-{
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      1);
-}
-
-void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
-                            std::string const& fn_name,
-                            uint64_t (*f)(HostCallContext*, uint64_t, uint64_t))
-{
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      2);
-}
-
-void
-Stitch_WasmRuntime::link_fn(
-    std::string const& module_name,
+bool 
+Stitch_WasmRuntime::link_fn_nargs(std::string const& module_name,
     std::string const& fn_name,
-    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t))
+    void* fn,
+    uint8_t nargs) 
 {
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      3);
-}
-
-void
-Stitch_WasmRuntime::link_fn(
-    std::string const& module_name,
-    std::string const& fn_name,
-    uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t, uint64_t))
-{
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      4);
-}
-
-void
-Stitch_WasmRuntime::link_fn(std::string const& module_name,
-                            std::string const& fn_name,
-                            uint64_t (*f)(HostCallContext*,
-                                          uint64_t,
-                                          uint64_t,
-                                          uint64_t,
-                                          uint64_t,
-                                          uint64_t))
-{
-
-    stitch_link_nargs(runtime_pointer,
-                      (const uint8_t*)module_name.c_str(),
-                      module_name.size(),
-                      (const uint8_t*)fn_name.c_str(),
-                      fn_name.size(),
-                      (void*)f,
-                      5);
+    return stitch_link_nargs(
+        runtime_pointer,
+        (const uint8_t*)module_name.c_str(),
+        module_name.size(),
+        (const uint8_t*)fn_name.c_str(),
+        fn_name.size(),
+        (void*)fn,
+        nargs);
 }
 
 bool
