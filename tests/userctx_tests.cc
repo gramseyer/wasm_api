@@ -27,7 +27,8 @@ using namespace test;
 
 void* ctx_check = (void*) (0xAABBCCDD'EEFF0011);
 
-uint64_t foo(HostCallContext* ctx, uint64_t value)
+HostFnStatus<uint64_t>
+foo(HostCallContext* ctx, uint64_t value)
 {
 	EXPECT_TRUE(ctx->user_ctx == ctx_check);
 	EXPECT_TRUE(value == 12);
@@ -43,10 +44,11 @@ class UserCtxTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngi
     Script s {.data = c->data(), .len = c->size()};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
-
+    
     runtime = ctx->new_runtime_instance(s, ctx_check);
+    ASSERT_TRUE(!!runtime);
 
-    runtime->template link_fn<&foo>("test", "redir_call");
+    ASSERT_TRUE(runtime->link_fn("test", "redir_call", &foo));
   }
 
   std::unique_ptr<WasmContext> ctx;
@@ -57,9 +59,9 @@ uint32_t expect = 0;
 
 TEST_P(UserCtxTests, check_userctx_correct)
 {
-  auto res = runtime->template invoke<uint32_t>("calltest");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-	EXPECT_EQ(res.out, 15u);
+  auto res = runtime->invoke("calltest");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 15u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, UserCtxTests,

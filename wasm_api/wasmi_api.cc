@@ -4,6 +4,8 @@
 
 #include "wasm_api/ffi_trampolines.h"
 
+#include <cinttypes>
+
 enum class WasmiInvokeError : uint32_t
 {
     None = 0,
@@ -117,6 +119,8 @@ Wasmi_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_lim
                          reinterpret_cast<const uint8_t*>(method_name.c_str()),
                          static_cast<uint32_t>(method_name.size()),
                          gas_limit);
+
+    std::printf("wasmi invoke error: %" PRIu32 "\n", invoke_res.error);
     
     switch (WasmiInvokeError(invoke_res.error))
     {

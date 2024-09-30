@@ -27,10 +27,7 @@ wasm_api_SRCS = \
 	$(WASM3_SRCS) \
 	%reldir%/wasm_api/wasm_api.cc \
 	%reldir%/wasm_api/wasm3_api.cc \
-	%reldir%/wasm_api/wasmi_api.cc \
-	%reldir%/wasm_api/stitch_api.cc \
-	%reldir%/wasm_api/ffi_trampolines.cc \
-	%reldir%/wasm_api/fizzy_api.cc
+	%reldir%/wasm_api/ffi_trampolines.cc
 
 $(wasm_api_SRCS:.cc=.o) : %reldir%/fizzy/build/lib/libfizzy.a
 

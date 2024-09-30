@@ -24,15 +24,10 @@
 
 using namespace wasm_api;
 
-template<typename value_t>
-void expect_res_eq(std::pair<std::optional<value_t>, M3Result> const& res, value_t const& val) {
-	EXPECT_TRUE(res.second == m3Err_none);
-	EXPECT_TRUE(res.first.has_value());
-
-	if (res.first.has_value())
-	{
-		EXPECT_EQ(*res.first, val);
-	}
+void expect_res_eq(InvokeStatus<uint64_t> res, uint64_t const& val) {
+	ASSERT_TRUE(!!res);
+	EXPECT_EQ(*res, val);
+	std::printf("%llx %llx comparison\n", *res, val);
 }
 
 // lol does this work
@@ -57,7 +52,7 @@ TEST(wasm3, call)
 
 	ASSERT_TRUE(f.has_value());
 
-	expect_res_eq(f->template call<int32_t>(15, 20), 35);
+	EXPECT_EQ(f->call(15LLU, 20LLU), 35);
 
 //	int32_t res = f.template call<int32_t>(15, 20);
 //	EXPECT_EQ(res, 35);
@@ -80,42 +75,46 @@ TEST(wasm3, set_memory)
 
 	auto sz = r->find_function("size");
 
-	expect_res_eq(sz->template call<int32_t>(), 1);
+	ASSERT_TRUE(!!sz);
+
+	auto sz_res = sz->call();
+	ASSERT_TRUE(!!sz_res);
+	EXPECT_EQ(*sz_res, 1);
 
 	auto store = r->find_function("store");
 
-	expect_res(store->call(0, 0x12345678));
+	EXPECT_TRUE(!!store->call(0LLU, 0x12345678'12345678LLU));
 
-	expect_res(store->call(4, 0xABCDEF90));
+	EXPECT_TRUE(!!store->call(8LLU, 0xABCDEF90'ABCDEF90LLU));
 
 	auto load = r->find_function("load");
 
 	ASSERT_TRUE(load.has_value());
 
-	auto mem0 = load->template call<int32_t>(0);
+	auto mem0 = load->call(0LLU);
 
-	expect_res_eq(mem0, 0x12345678);
+	expect_res_eq(mem0, 0x12345678'12345678);
 
 	auto load8 = r->find_function("load8");
 
 	ASSERT_TRUE(load8.has_value());
 
-	expect_res_eq(load8->template call<int32_t>(0), 0x78);
-	expect_res_eq(load8->template call<int32_t>(1), 0x56);
+	expect_res_eq(load8->call(0LLU), 0x78);
+	expect_res_eq(load8->call(1LLU), 0x56);
 
 	auto load16 = r->find_function("load16");
 
 	ASSERT_TRUE(load16.has_value());
 
-	expect_res_eq(load16->template call<int32_t>(3), 0x9012);
+	expect_res_eq(load16->call(7LLU), 0x9012);
 
-	auto [mem_ptr, mlen] = r->get_memory();
+	auto mem = r->get_memory();
 
-	EXPECT_TRUE(mlen == 65536);
+	EXPECT_TRUE(mem.size() == 65536);
 
-	uint32_t buf[2];
-	buf[0] = 0x12345678;
-	buf[1] = 0xABCDEF90;
+	uint64_t buf[2];
+	buf[0] = 0x12345678'12345678;
+	buf[1] = 0xABCDEF90'ABCDEF90;
 
-	EXPECT_TRUE(0 == memcmp(mem_ptr, (uint8_t*)buf, 8));
+	EXPECT_EQ(0, memcmp(reinterpret_cast<uint8_t*>(mem.data()), (uint8_t*)buf, 16));
 } 

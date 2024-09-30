@@ -16,12 +16,14 @@
 
 #include "wasm_api/wasm_api.h"
 
-#include "wasm_api/stitch_api.h"
+//#include "wasm_api/stitch_api.h"
 #include "wasm_api/wasm3_api.h"
-#include "wasm_api/wasmi_api.h"
-#include "wasm_api/fizzy_api.h"
+//#include "wasm_api/wasmi_api.h"
+//#include "wasm_api/fizzy_api.h"
 
 #include <string.h>
+
+#include <cinttypes>
 
 namespace wasm_api
 {
@@ -33,12 +35,12 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
         {
             case SupportedWasmEngine::WASM3:
                 return new Wasm3_WasmContext(MAX_STACK_BYTES);
-            case SupportedWasmEngine::MAKEPAD_STITCH:
-                return new Stitch_WasmContext();
-            case SupportedWasmEngine::WASMI:
-                return new Wasmi_WasmContext(MAX_STACK_BYTES);
-            case SupportedWasmEngine::FIZZY:
-                return new Fizzy_WasmContext(MAX_STACK_BYTES);
+          //  case SupportedWasmEngine::MAKEPAD_STITCH:
+          //      return new Stitch_WasmContext();
+          //  case SupportedWasmEngine::WASMI:
+          //      return new Wasmi_WasmContext(MAX_STACK_BYTES);
+          //  case SupportedWasmEngine::FIZZY:
+          //      return new Fizzy_WasmContext(MAX_STACK_BYTES);
             default:
                 return nullptr;
         }
@@ -52,7 +54,11 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     {
         return nullptr;
     }
-    return impl->new_runtime_instance(contract, ctxp);
+    if (impl) {
+        return impl->new_runtime_instance(contract, ctxp);
+    }
+    std::printf("failed to set impl\n");
+    return nullptr;
 }
 
 WasmContext::~WasmContext()
@@ -88,121 +94,49 @@ WasmRuntime::~WasmRuntime()
     impl = nullptr;
 }
 
-std::pair<uint8_t*, uint32_t>
+std::span<std::byte>
 WasmRuntime::get_memory()
 {
     if (impl) {
         return impl->get_memory();
     }
-    return {nullptr, 0};
+    return std::span<std::byte>();
 }
 
-std::pair<const uint8_t*, uint32_t>
+std::span<const std::byte>
 WasmRuntime::get_memory() const
 {
     if (impl) {
         return impl->get_memory();
     }
-    return {nullptr, 0};
+    return std::span<const std::byte>();
 }
 
-int32_t
-WasmRuntime::memcmp(uint32_t lhs, uint32_t rhs, uint32_t max_len) const
+detail::MeteredReturn 
+WasmRuntime::invoke(std::string const& method_name,
+                                uint64_t gas_limit)
 {
-    auto [mem, mlen] = get_memory();
-    detail::check_bounds(mlen, std::max(lhs, rhs), max_len);
-    return std::memcmp(mem + lhs, mem + rhs, max_len);
-}
-
-uint32_t
-WasmRuntime::memset(uint32_t dst, uint8_t val, uint32_t len)
-{
-    auto [mem, mlen] = get_memory();
-    detail::check_bounds(mlen, dst, len);
-    std::memset(mem + dst, val, len);
-    return dst;
-}
-
-uint32_t
-WasmRuntime::safe_memcpy(uint32_t dst, uint32_t src, uint32_t len) {
-    auto res = safe_memcpy_noexcept(dst, src, len);
-    if (!res.has_value()) {
-        throw HostError("safe memcpy failed");
+    if (!impl) {
+        return { .result = InvokeStatus<uint64_t>(std::unexpect_t{}, InvokeError::UNRECOVERABLE), .gas_consumed = 0 };
     }
-    return *res;
-}
+    uint64_t gas_backup = impl -> get_available_gas();
 
-// throws if memory regions overlap
-std::optional<uint32_t>
-__attribute__((warn_unused_result))
-WasmRuntime::safe_memcpy_noexcept(uint32_t dst, uint32_t src, uint32_t len)
-{
-    auto [mem, mlen] = get_memory();
+    impl -> set_available_gas(gas_limit);
+    auto res = impl->invoke(method_name);
+    uint64_t gas_remaining = impl -> get_available_gas();
 
-    // implicity checks overflows for src+len and dst+len
-    if (!detail::check_bounds_noexcept(mlen, std::max(src, dst), len)) {
-        return std::nullopt;
+    if (gas_limit < gas_remaining) {
+        return detail::MeteredReturn {
+            .result = InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::UNRECOVERABLE},
+            .gas_consumed = 0
+        };
     }
+    impl -> set_available_gas(gas_backup);
 
-    if (dst <= src && dst + len > src)
-    {
-        return std::nullopt; // overlapping memcpy
-    }
-    if (src <= dst && src + len > dst)
-    {
-        return std::nullopt; // overlapping memcpy
-    }
-
-    /*if (src + len > mlen || dst + len > mlen)
-    {
-        throw HostError("OOB memcpy");
-    } */
-
-    std::memcpy(mem + dst, mem + src, len);
-    return dst;
-}
-
-uint32_t
-WasmRuntime::safe_strlen(uint32_t start, uint32_t max_len) const
-{
-    auto [mem, mlen] = get_memory();
-
-    if (start > mlen)
-    {
-        return 0;
-    }
-
-    return strnlen(reinterpret_cast<const char*>(mem + start),
-                   std::min(max_len, mlen - start));
-}
-
-void
-WasmRuntime::_write_to_memory(const uint8_t* src_ptr,
-                              uint32_t offset,
-                              uint32_t len)
-{
-    auto [mem, mlen] = get_memory();
-
-    detail::check_bounds(mlen, offset, len);
-
-    std::memcpy(mem + offset, src_ptr, len);
-}
-
-bool 
-WasmRuntime::_write_to_memory_noexcept(
-    const uint8_t* src_ptr,
-    uint32_t offset,
-    uint32_t len) noexcept
-{
-    auto [mem, mlen] = get_memory();
-
-    if (detail::check_bounds_noexcept(mlen, offset, len))
-    {
-        std::memcpy(mem + offset, src_ptr, len);
-        return true;
-    }
-    return false;
-
+    return {
+        res,
+        gas_limit - gas_remaining
+    };
 }
 
 bool
@@ -223,35 +157,5 @@ WasmRuntime::get_available_gas() const
     }
     return 0;
 }
-
-namespace detail
-{
-
-void
-check_bounds(uint32_t mlen, uint32_t offset, uint32_t len)
-{
-    if (__builtin_add_overflow_p(
-            offset, len, static_cast<uint32_t>(0)) // overflow
-        || (mlen < offset + len))
-    {
-        throw HostError("OOB Mem Access: mlen = " + std::to_string(mlen)
-                        + " offset = " + std::to_string(offset)
-                        + " len = " + std::to_string(len));
-    }
-}
-
-bool 
-check_bounds_noexcept(uint32_t mlen, uint32_t offset, uint32_t len) noexcept
-{
-    if (__builtin_add_overflow_p(
-            offset, len, static_cast<uint32_t>(0)) // overflow
-        || (mlen < offset + len))
-    {
-        return false;
-    }
-    return true;
-}
-
-} // namespace detail
 
 } // namespace wasm_api

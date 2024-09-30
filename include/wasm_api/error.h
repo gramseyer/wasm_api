@@ -16,35 +16,31 @@
  * limitations under the License.
  */
 
-#include <stdexcept>
+#include <expected>
+#include <cstdint>
 
 namespace wasm_api
 {
 
-enum class ErrorType {
-    None = 0,
-    HostError = 1,
-    UnrecoverableSystemError = 2,
+enum class HostFnError : uint8_t {
+    NONE_OR_RECOVERABLE = 0,
+    RETURN_SUCCESS = 1, // technically "success", but terminates the caller wasm instance
+    OUT_OF_GAS = 2,
+    UNRECOVERABLE = 3
 };
 
-// calls to builtin fns from the wasm environment should
-// throw HostError
-struct HostError : public std::runtime_error
-{
-    using std::runtime_error::runtime_error;
+template<typename T>
+using HostFnStatus = std::expected<T, HostFnError>;
+
+enum class InvokeError : uint8_t {
+  NONE = 0,
+  DETERMINISTIC_ERROR = 1,
+  OUT_OF_GAS_ERROR = 2,
+  UNRECOVERABLE = 3,
+  RETURN = 4,
 };
 
-// Thrown by Wasm API if there's some issue
-// arising within a wasm call,
-// including when there's an error in a nested call
-struct WasmError : public HostError
-{
-    using HostError::HostError;
-};
-
-struct UnrecoverableSystemError : public std::runtime_error
-{
-    using std::runtime_error::runtime_error;
-};
+template<typename T>
+using InvokeStatus = std::expected<T, InvokeError>;
 
 } // namespace wasm_api

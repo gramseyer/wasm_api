@@ -23,47 +23,48 @@
 namespace wasm_api
 {
 
-uint64_t arity0(HostCallContext* ctx) {
+HostFnStatus<uint64_t> arity0(HostCallContext* ctx) {
+  std::printf("got here\n");
   return 100;
 }
 
-uint64_t arity1(HostCallContext* ctx, uint64_t arg0)
+HostFnStatus<uint64_t> arity1(HostCallContext* ctx, uint64_t arg0)
 {
   if (arg0 != 1) {
-    throw HostError("invalid arity check");
+    throw std::runtime_error("invalid arity check");
   }
   return 101;
 }
 
-uint64_t arity2(HostCallContext* ctx, uint64_t arg0, uint64_t arg1)
+HostFnStatus<uint64_t> arity2(HostCallContext* ctx, uint64_t arg0, uint64_t arg1)
 {
   if (arg0 != 1) {
-    throw HostError("invalid arity check");
+    throw std::runtime_error("invalid arity check");
   }
   return 102;
 }
 
-uint64_t arity3(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2)
+HostFnStatus<uint64_t> arity3(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2)
 {
   if (arg0 != 1 || arg1 != 2 || arg2 != 3) {
-    throw HostError("invalid arity check");
+    throw std::runtime_error("invalid arity check");
   }
   return 103;
 }
 
-uint64_t arity4(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3)
+HostFnStatus<uint64_t> arity4(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3)
 {
   if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4) {
-    throw HostError("invalid arity check");
+    throw std::runtime_error("invalid arity check");
   }
   return 104;
 }
 
 
-uint64_t arity5(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4)
+HostFnStatus<uint64_t> arity5(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4)
 {
   if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5) {
-    throw HostError("invalid arity check");
+    throw std::runtime_error("invalid arity check");
   }
   return 105;
 }
@@ -84,12 +85,14 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
     runtime = ctx->new_runtime_instance(s, nullptr);
 
-    runtime->template link_fn<&arity0>("test", "arg0");
-    runtime->template link_fn<&arity1>("test", "arg1");
-    runtime->template link_fn<&arity2>("test", "arg2");
-    runtime->template link_fn<&arity3>("test", "arg3");
-    runtime->template link_fn<&arity4>("test", "arg4");
-    runtime->template link_fn<&arity5>("test", "arg5");
+    ASSERT_TRUE(!!runtime);
+
+    runtime->link_fn("test", "arg0", &arity0);
+    runtime->link_fn("test", "arg1", &arity1);
+    runtime->link_fn("test", "arg2", &arity2);
+    runtime->link_fn("test", "arg3", &arity3);
+    runtime->link_fn("test", "arg4", &arity4);
+    runtime->link_fn("test", "arg5", &arity5);
 
   }
 
@@ -99,60 +102,45 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
 TEST_P(InvokeArityTests, arity0)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest0");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 100);
+  auto res = runtime->invoke("calltest0");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 100);
 }
 
 TEST_P(InvokeArityTests, arity1)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest1");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 101);
+  auto res = runtime->invoke("calltest1");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 101);
 }
 
 TEST_P(InvokeArityTests, arity2)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest2");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 102);
+  auto res = runtime->invoke("calltest2");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 102);
 }
 
 TEST_P(InvokeArityTests, arity3)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest3");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 103);
+  auto res = runtime->invoke("calltest3");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 103);
 }
 
 TEST_P(InvokeArityTests, arity4)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest4");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 104);
+  auto res = runtime->invoke("calltest4");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 104);
 }
-
 
 TEST_P(InvokeArityTests, arity5)
 {
-  auto res = runtime->template invoke<uint64_t>("calltest5");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-  ASSERT_TRUE(res.out.has_value());
-
-  EXPECT_EQ(*res.out, 105);
+  auto res = runtime->invoke("calltest5");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 105);
 }
-
-
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, InvokeArityTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 

@@ -565,6 +565,7 @@ pub extern "C" fn wasmi_invoke(
                     gas_consumed: gas_limit - gas_remaining,
                 };
             }
+            println!("{}",errstr);
             return WasmiInvokeResult {
                 result: 0,
                 error: WasmiInvokeError::CallError as u32,

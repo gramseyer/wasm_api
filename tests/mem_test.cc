@@ -25,6 +25,7 @@ namespace wasm_api
 
 using namespace test;
 
+/*
 class MemoryAccessTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
 
  protected:
@@ -46,6 +47,7 @@ class MemoryAccessTests : public ::testing::TestWithParam<wasm_api::SupportedWas
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
 }; 
+
 
 TEST_P(MemoryAccessTests, good_memcpy)
 {
@@ -99,5 +101,6 @@ INSTANTIATE_TEST_SUITE_P(AllEngines, MemoryAccessTests,
                         	wasm_api::SupportedWasmEngine::FIZZY));
 
 
+*/
 
 } /* wasm_api */

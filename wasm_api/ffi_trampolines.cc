@@ -3,24 +3,45 @@
 #include "wasm_api/error.h"
 
 #include <utility>
-
-constexpr static uint8_t TrampolineError_NONE = 0;
-constexpr static uint8_t TrampolineError_HOSTERROR = 1;
-constexpr static uint8_t TrampolineError_UNRECOVERABLE = 2;
+#include <cstdio>
 
 namespace detail
 {
 TrampolineResult
-success(uint64_t res)
+no_error(uint64_t res)
 {
-    return TrampolineResult{ res, TrampolineError_NONE };
+    return TrampolineResult{ res, static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE) };
 }
 
 TrampolineResult
-error(uint8_t error)
-{
-    return TrampolineResult{ 0, error };
+unrecoverable_error() {
+    return TrampolineResult{ 0, static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE) };
 }
+
+TrampolineResult
+out_of_gas() {
+    return TrampolineResult{ 0, static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS) };
+}
+
+TrampolineResult
+return_success() {
+    return TrampolineResult{ 0, static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS) };
+}
+
+TrampolineResult handle_result(wasm_api::HostFnStatus<uint64_t> result) {
+    if (result) {
+        return no_error(*result);
+    }
+    switch(result.error()) {
+        case wasm_api::HostFnError::OUT_OF_GAS:
+            return out_of_gas();
+        case wasm_api::HostFnError::RETURN_SUCCESS:
+            return return_success();
+        default:
+            return unrecoverable_error();
+    }
+}
+
 
 } // namespace detail
 
@@ -31,6 +52,7 @@ class HostCallContext;
 
 extern "C"
 {
+
     // trampolines
 
     TrampolineResult c_call_0args(void* function_pointer,
@@ -42,16 +64,13 @@ extern "C"
                 = reinterpret_cast<wasm_api::HostCallContext*>(
                     host_call_context);
             auto* ptr
-                = (uint64_t(*)(wasm_api::HostCallContext*))(function_pointer);
-            return detail::success((*ptr)(user_ctx));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
+                = (wasm_api::HostFnStatus<uint64_t>(*)(wasm_api::HostCallContext*))(function_pointer);
+
+            return detail::handle_result((*ptr)(user_ctx));
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 
@@ -65,17 +84,13 @@ extern "C"
                 = reinterpret_cast<wasm_api::HostCallContext*>(
                     host_call_context);
 
-            auto* ptr = (uint64_t(*)(wasm_api::HostCallContext*, uint64_t))(
+            auto* ptr = (wasm_api::HostFnStatus<uint64_t>(*)(wasm_api::HostCallContext*, uint64_t))(
                 function_pointer);
-            return detail::success((*ptr)(user_ctx, arg1));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
+            return detail::handle_result((*ptr)(user_ctx, arg1));
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 
@@ -91,17 +106,13 @@ extern "C"
                     host_call_context);
 
             auto* ptr
-                = (uint64_t(*)(wasm_api::HostCallContext*, uint64_t, uint64_t))(
+                = (wasm_api::HostFnStatus<uint64_t>(*)(wasm_api::HostCallContext*, uint64_t, uint64_t))(
                     function_pointer);
-            return detail::success((*ptr)(user_ctx, arg1, arg2));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
+            return detail::handle_result((*ptr)(user_ctx, arg1, arg2));
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 
@@ -117,18 +128,14 @@ extern "C"
                 = reinterpret_cast<wasm_api::HostCallContext*>(
                     host_call_context);
 
-            auto* ptr = (uint64_t(*)(
+            auto* ptr = (wasm_api::HostFnStatus<uint64_t>(*)(
                 wasm_api::HostCallContext*, uint64_t, uint64_t, uint64_t))(
                 function_pointer);
-            return detail::success((*ptr)(user_ctx, arg1, arg2, arg3));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
+            return detail::handle_result((*ptr)(user_ctx, arg1, arg2, arg3));
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 
@@ -145,20 +152,16 @@ extern "C"
                 = reinterpret_cast<wasm_api::HostCallContext*>(
                     host_call_context);
 
-            auto* ptr = (uint64_t(*)(wasm_api::HostCallContext*,
+            auto* ptr = (wasm_api::HostFnStatus<uint64_t>(*)(wasm_api::HostCallContext*,
                                      uint64_t,
                                      uint64_t,
                                      uint64_t,
                                      uint64_t))(function_pointer);
-            return detail::success((*ptr)(user_ctx, arg1, arg2, arg3, arg4));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
+            return detail::handle_result((*ptr)(user_ctx, arg1, arg2, arg3, arg4));
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 
@@ -176,22 +179,18 @@ extern "C"
                 = reinterpret_cast<wasm_api::HostCallContext*>(
                     host_call_context);
 
-            auto* ptr = (uint64_t(*)(wasm_api::HostCallContext*,
+            auto* ptr = (wasm_api::HostFnStatus<uint64_t>(*)(wasm_api::HostCallContext*,
                                      uint64_t,
                                      uint64_t,
                                      uint64_t,
                                      uint64_t,
                                      uint64_t))(function_pointer);
-            return detail::success(
+            return detail::handle_result(
                 (*ptr)(user_ctx, arg1, arg2, arg3, arg4, arg5));
-        }
-        catch (wasm_api::HostError&)
-        {
-            return detail::error(TrampolineError_HOSTERROR);
         }
         catch (...)
         {
-            return detail::error(TrampolineError_UNRECOVERABLE);
+            return detail::unrecoverable_error();
         }
     }
 }

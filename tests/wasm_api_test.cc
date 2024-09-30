@@ -23,25 +23,25 @@
 using namespace wasm_api;
 using namespace test;
 
-uint64_t
+HostFnStatus<uint64_t>
 throw_runtime_error(HostCallContext* ctxp)
 {
     throw std::runtime_error("bad fn\n");
 }
 
-uint64_t
+HostFnStatus<uint64_t>
 throw_host_error(HostCallContext* ctxp)
 {
-    throw wasm_api::HostError("host error\n");
+    return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::OUT_OF_GAS};
 }
 
-uint64_t
+HostFnStatus<uint64_t>
 throw_bad_alloc(HostCallContext* ctxp)
 {
     throw std::bad_alloc();
 }
 
-uint64_t
+HostFnStatus<uint64_t>
 good_call(HostCallContext* ctxp)
 { 
     return 0;
@@ -50,15 +50,30 @@ good_call(HostCallContext* ctxp)
 static WasmRuntime* s_runtime;
 static bool reentrance_hit = false;
 
-uint64_t
+HostFnStatus<uint64_t>
 reentrance(HostCallContext* ctxp)
 {
     reentrance_hit = true;
-    auto res = s_runtime->template invoke<void>("unreachable");
-    if (res.panic == wasm_api::ErrorType::HostError) {
-        throw wasm_api::HostError("raising host error");
+    auto invoke_res = s_runtime->invoke("unreachable");
+
+    std::printf("got here\n");
+
+
+    if (invoke_res.result.has_value()) {
+        return *invoke_res.result;
     }
-    return 0;
+    switch(invoke_res.result.error()) {
+    case InvokeError::NONE:
+        throw std::runtime_error("impossible");
+    case InvokeError::DETERMINISTIC_ERROR:
+        return 1;
+    case InvokeError::OUT_OF_GAS_ERROR:
+        return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::OUT_OF_GAS};
+    case InvokeError::RETURN:
+        return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::RETURN_SUCCESS};
+    default:
+        return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::UNRECOVERABLE};
+    }
 }
 
 class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
@@ -72,7 +87,9 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
     runtime = ctx->new_runtime_instance(s);
 
-    runtime->template link_fn<&good_call>("test", "good_call");
+    ASSERT_TRUE(!!runtime);
+
+    ASSERT_TRUE(runtime->template link_fn("test", "good_call", &good_call));
   }
 
   bool no_error_handling_shame() {
@@ -100,70 +117,79 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
 TEST_P(ExternalCallTest, unlinked_fn)
 {
-    auto res = runtime -> template invoke<void>("call1");
-    EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
+    auto res = runtime ->invoke("call1");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::DETERMINISTIC_ERROR);
 }
 
 TEST_P(ExternalCallTest, runtime_error)
 {
-    runtime->template link_fn<&throw_runtime_error>("test",
-                                                        "external_call");
+    runtime->link_fn("test",
+                                                        "external_call",
+                                                        &throw_runtime_error);
     ERROR_GUARD
     UNRECOVERABLEGUARD
-    EXPECT_THROW(runtime->template invoke<void>("call1"),
-                          wasm_api::UnrecoverableSystemError);
+    auto res = runtime -> invoke("call1");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::UNRECOVERABLE);
 }
 
 
 TEST_P(ExternalCallTest, host_error)
 {
-    runtime->template link_fn<&throw_host_error>("test", "external_call");
+    runtime->link_fn("test", "external_call", &throw_host_error);
     ERROR_GUARD
 
-    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
-        wasm_api::ErrorType::HostError);
+    auto res = runtime -> invoke("call1");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::OUT_OF_GAS_ERROR);
 }
 
 TEST_P(ExternalCallTest, other_weird_error)
 {
-    runtime->template link_fn<&throw_bad_alloc>("test", "external_call");
+    runtime->link_fn("test", "external_call", &throw_bad_alloc);
     ERROR_GUARD
     UNRECOVERABLEGUARD
-    EXPECT_THROW(runtime->template invoke<void>("call1"),
-                      wasm_api::UnrecoverableSystemError);
+    auto res = runtime -> invoke("call1");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::UNRECOVERABLE);
 }
-
 
 
 TEST_P(ExternalCallTest, wasm_error)
 {
     // link all the fns, required for MAKEPAD_STITCH
-    runtime->template link_fn<&good_call>("test", "external_call");
+    runtime->link_fn("test", "external_call", &good_call);
 
-    auto res = runtime -> template invoke<void>("unreachable");
-
-    EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
+    auto res = runtime -> invoke("unreachable");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::DETERMINISTIC_ERROR);
 }
 
 TEST_P(ExternalCallTest, follow_bad_with_good)
 {
-    runtime->template link_fn<&throw_host_error>("test", "external_call");
+    runtime->link_fn("test", "external_call", &throw_host_error);
 
     ERROR_GUARD
-    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
-                      wasm_api::ErrorType::HostError);
+    auto res = runtime -> invoke("call1");
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::OUT_OF_GAS_ERROR);
 
-    runtime->template invoke<void>("call2");
+    res = runtime->invoke("call2");
+    EXPECT_TRUE(!!res.result);
 }
 
 TEST_P(ExternalCallTest, reentrance)
 {
-    runtime->template link_fn<&reentrance>("test", "external_call");
+    runtime->link_fn("test", "external_call", &reentrance);
     s_runtime = runtime.get();
 
     ERROR_GUARD
-    EXPECT_EQ(runtime->template invoke<void>("call1").panic,
-                      wasm_api::ErrorType::HostError);
+
+    auto res = runtime->invoke("call1");
+    ASSERT_TRUE(!!res.result);
+    // gracefully handle error in subcall, here meaning return 1
+    EXPECT_EQ(*res.result, 1);
     EXPECT_TRUE(reentrance_hit);
 }
 

@@ -25,7 +25,7 @@ Wasm3_WasmRuntime::Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r,
                                      std::unique_ptr<wasm3::module> m)
     : runtime(std::move(r))
     , module(std::move(m))
-    , available_gas(0)
+    , available_gas_(0)
 {}
 
 std::unique_ptr<WasmRuntime>
@@ -58,62 +58,41 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     return std::unique_ptr<WasmRuntime>(out.release());
 }
 
-detail::MeteredReturn<uint64_t>
-Wasm3_WasmRuntime::invoke(std::string const& method_name, const uint64_t gas_limit)
+InvokeStatus<uint64_t>
+Wasm3_WasmRuntime::invoke(std::string const& method_name)
 {
     auto fn = runtime->find_function(method_name.c_str());
 
     if (!fn){
-    	return {std::nullopt, 0, ErrorType::HostError};
+    	return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR};
     }
 
-    available_gas = gas_limit;
-
-    auto [ret_val, res_err]  = fn->template call<uint64_t>();
-
-    uint64_t consumed_gas = gas_limit - available_gas;
-
-    if (res_err == m3Err_none)
-    {
-    	if (!ret_val.has_value())
-    	{
-    		return {std::nullopt, consumed_gas, ErrorType::UnrecoverableSystemError};
-    	}
-    	return {*ret_val, consumed_gas, ErrorType::None};
-    }    
-
-    if (res_err != m3Err_unrecoverableSystemError)
-    {
-    	return {std::nullopt, consumed_gas, ErrorType::HostError};
-    }
-
-    // m3Err_unrecoverableSystemError should have thrown from within the wasm3 api
-    std::terminate();
+    return fn->call();
 }
 
 bool
 __attribute__((warn_unused_result))
 Wasm3_WasmRuntime::consume_gas(uint64_t gas)
 {
-    if (gas > available_gas)
+    if (gas > available_gas_)
     {
-        available_gas = 0;
+        available_gas_ = 0;
         return false;
     }
-    available_gas -= gas;
+    available_gas_ -= gas;
     return true;
 }
 
 void
 Wasm3_WasmRuntime::set_available_gas(uint64_t gas)
 {
-    available_gas = gas;
+    available_gas_ = gas;
 }
 
 uint64_t
 Wasm3_WasmRuntime::get_available_gas() const
 {
-    return available_gas;
+    return available_gas_;
 }
 
 } // namespace wasm_api

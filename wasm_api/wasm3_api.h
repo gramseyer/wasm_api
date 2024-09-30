@@ -49,65 +49,26 @@ public:
     Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r,
                       std::unique_ptr<wasm3::module> m);
 
-    std::pair<uint8_t*, uint32_t> get_memory() override
+    std::span<std::byte> get_memory() override
     {
         return runtime->get_memory();
     }
 
-    std::pair<const uint8_t*, uint32_t> get_memory() const override
+    std::span<const std::byte> get_memory() const override
     {
         return runtime->get_memory();
     }
 
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*)) override
-    {
-        _link_fn(module_name, fn_name, f);
-    }
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t)) override
-    {
-        _link_fn(module_name, fn_name, f);
-    }
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*, uint64_t, uint64_t)) override
-    {
-        _link_fn(module_name, fn_name, f);
-    }
-    void link_fn(
+    bool link_fn_nargs(
         std::string const& module_name,
         std::string const& fn_name,
-        uint64_t (*f)(HostCallContext*, uint64_t, uint64_t, uint64_t)) override
+        void* fn,
+        uint8_t nargs) override
     {
-        _link_fn(module_name, fn_name, f);
+        return module -> link_nargs(module_name.c_str(), fn_name.c_str(), fn, nargs);
     }
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override
-    {
-        _link_fn(module_name, fn_name, f);
-    }
-    void link_fn(std::string const& module_name,
-                 std::string const& fn_name,
-                 uint64_t (*f)(HostCallContext*,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t,
-                               uint64_t)) override
-    {
-        _link_fn(module_name, fn_name, f);
-    };
 
-    detail::MeteredReturn<uint64_t> invoke(std::string const& method_name,
-                                           const uint64_t gas_limit) override;
+    InvokeStatus<uint64_t> invoke(std::string const& method_name) override;
 
     // This version of WasmRuntime requires the wasm to be instrumented
     // with calls to a "consume gas" function.  Host functions
@@ -123,15 +84,7 @@ private:
     std::unique_ptr<wasm3::runtime> runtime;
     std::unique_ptr<wasm3::module> module;
 
-    uint64_t available_gas;
-
-    template<typename... Args>
-    void _link_fn(std::string const& module_name,
-                  std::string const& fn_name,
-                  auto (*f)(Args...))
-    {
-        module->link_optional(module_name.c_str(), fn_name.c_str(), f);
-    }
+    uint64_t available_gas_;
 };
 
 } // namespace wasm_api

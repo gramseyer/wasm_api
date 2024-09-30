@@ -1,28 +1,29 @@
 #include <gtest/gtest.h>
 
 #include "wasm_api/wasm_api.h"
+#include "wasm_api/error.h"
 
 #include "tests/load_wasm.h"
 
 using namespace wasm_api;
 using namespace test;
 
-uint64_t
+HostFnStatus<uint64_t>
 consume_gas_call(HostCallContext* ctxp)
 {
     if (!ctxp -> runtime->consume_gas(100))
     {
-        throw wasm_api::HostError("out of gas");
+        return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::OUT_OF_GAS};
     }
     return 0;
 }
 
-uint64_t
+HostFnStatus<uint64_t>
 consume_gas_call2(HostCallContext* ctxp)
 {
     if (!ctxp -> runtime->consume_gas(5000))
     {
-        throw wasm_api::HostError("out of gas");
+        return HostFnStatus<uint64_t>{std::unexpect_t{}, HostFnError::OUT_OF_GAS};
     }
     return 0;
 }
@@ -39,8 +40,10 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
 
     runtime = ctx->new_runtime_instance(s);
 
-    runtime->template link_fn<&consume_gas_call2>("test", "good_call"); // called by "call2"
-    runtime->template link_fn<&consume_gas_call>("test", "external_call"); // called by "call1"
+    ASSERT_TRUE(!!runtime);
+
+    ASSERT_TRUE(runtime->template link_fn("test", "good_call", &consume_gas_call2)); // called by "call2"
+    ASSERT_TRUE(runtime->template link_fn("test", "external_call", &consume_gas_call)); // called by "call1"
   }
 
   bool no_error_handling_shame() {
@@ -76,20 +79,22 @@ TEST_P(GasApiTest, invoke_resets_gas)
 {
     runtime -> set_available_gas(5000);
 
-    auto res = runtime -> template invoke<uint64_t>("call1", 300);
+    auto res = runtime -> invoke("call1", 300);
 
-    EXPECT_EQ(res.panic, wasm_api::ErrorType::None);
-    EXPECT_GE(res.consumed_gas, 100);
+    ASSERT_TRUE(!!res.result);
+
+    EXPECT_GE(res.gas_consumed, 100);
 
     EXPECT_EQ(runtime->get_available_gas(), 5000);
 
-    EXPECT_TRUE(runtime -> consume_gas(res.consumed_gas));
+    EXPECT_TRUE(runtime -> consume_gas(res.gas_consumed));
 
     ERROR_GUARD
 
-    res = runtime -> template invoke<uint64_t>("call1", 80);
-    EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
-    EXPECT_EQ(res.consumed_gas, 80);
+    res = runtime -> invoke("call1", 80);
+    ASSERT_FALSE(!!res.result);
+    EXPECT_EQ(res.result.error(), InvokeError::OUT_OF_GAS_ERROR);
+    EXPECT_EQ(res.gas_consumed, 80);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, GasApiTest,

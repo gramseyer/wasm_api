@@ -36,6 +36,8 @@ class MissingImportedFnTests : public ::testing::TestWithParam<wasm_api::Support
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
     runtime = ctx->new_runtime_instance(s, nullptr);
+
+    ASSERT_TRUE(!!runtime);
   }
 
   std::unique_ptr<WasmContext> ctx;
@@ -44,8 +46,9 @@ class MissingImportedFnTests : public ::testing::TestWithParam<wasm_api::Support
 
 TEST_P(MissingImportedFnTests, missing_import_fail)
 {
-  auto res = runtime->template invoke<uint32_t>("calltest");
-  EXPECT_EQ(res.panic, wasm_api::ErrorType::HostError);
+  auto res = runtime->invoke("calltest");
+  ASSERT_FALSE(!!res.result);
+  EXPECT_EQ(res.result.error(), InvokeError::DETERMINISTIC_ERROR);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, MissingImportedFnTests,
