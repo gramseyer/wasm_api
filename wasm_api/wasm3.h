@@ -156,15 +156,12 @@ wrap_fn_0args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
   void *fn_pointer = _ctx->userdata;
 
   auto result = c_call_0args(fn_pointer, m3_GetUserData(rt));
-
-  std::printf("got result.panic=%u result.result %llu \n", result.panic, result.result);
-
+  
   switch (result.panic) {
   case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    std::printf("returning res\n");
     m3ApiReturn(result.result);
+    std::terminate();  // asserting that m3ApiReturn macro actually returns
   case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    std::printf("unrecoverable\n");
     m3ApiTrap(m3Err_unrecoverableSystemError);
   case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
     m3ApiTrap(m3Err_outOfGasError);

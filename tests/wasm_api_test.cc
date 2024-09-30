@@ -47,6 +47,12 @@ good_call(HostCallContext* ctxp)
     return 0;
 }
 
+HostFnStatus<uint64_t>
+nonzero_return(HostCallContext* ctxp)
+{
+    return 100;
+}
+
 static WasmRuntime* s_runtime;
 static bool reentrance_hit = false;
 
@@ -55,9 +61,6 @@ reentrance(HostCallContext* ctxp)
 {
     reentrance_hit = true;
     auto invoke_res = s_runtime->invoke("unreachable");
-
-    std::printf("got here\n");
-
 
     if (invoke_res.result.has_value()) {
         return *invoke_res.result;
@@ -101,10 +104,6 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
   }
 
   bool terminate_on_syserror_shame() {
-    if (GetParam() == wasm_api::SupportedWasmEngine::FIZZY) {
-        std::printf("SHAME: I haven't bothered forking Fizzy to support different kinds of error signaling\n");
-        return true;
-    }
     return false;
   }
 
@@ -192,6 +191,19 @@ TEST_P(ExternalCallTest, reentrance)
     EXPECT_EQ(*res.result, 1);
     EXPECT_TRUE(reentrance_hit);
 }
+
+TEST_P(ExternalCallTest, nonzero_return)
+{
+    runtime->link_fn("test", "external_call", &nonzero_return);
+
+    ERROR_GUARD
+
+    auto res = runtime->invoke("call1");
+    ASSERT_TRUE(!!res.result);
+    // gracefully handle error in subcall, here meaning return 1
+    EXPECT_EQ(*res.result, 100);
+}
+
 
 TEST_P(ExternalCallTest, null_handling)
 {

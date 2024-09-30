@@ -24,7 +24,6 @@ namespace wasm_api
 {
 
 HostFnStatus<uint64_t> arity0(HostCallContext* ctx) {
-  std::printf("got here\n");
   return 100;
 }
 

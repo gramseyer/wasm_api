@@ -1,6 +1,7 @@
 #include "wasm_api/fizzy_api.h"
 
 #include "wasm_api/error.h"
+#include "wasm_api/ffi_trampolines.h"
 
 #include <fizzy/fizzy.h>
 
@@ -12,10 +13,35 @@ void
 throw_unrecoverable_errors(FizzyError error)
 {
   if (error.code == FizzyErrorCode::FizzyErrorOther) {
-    throw UnrecoverableSystemError("unknown fizzy error");
+    throw std::runtime_error("unknown fizzy error");
   }
   if (error.code == FizzyErrorCode::FizzyErrorMemoryAllocationFailed) {
-    throw UnrecoverableSystemError("fizzy malloc failed");
+    throw std::runtime_error("fizzy malloc failed");
+  }
+}
+
+FizzyExecutionResult
+handle_trampline_result(TrampolineResult result, HostFnError* ctx_errno)
+{
+  // Fizzy doesn't have a good way of passing back the error type internally,
+  // so we set it in FizzyTrampolineHostContext
+  HostFnError err = static_cast<HostFnError>(result.panic);
+  *ctx_errno = err;
+
+  if (err == HostFnError::NONE_OR_RECOVERABLE) {
+    FizzyValue out;
+    out.i64 = result.result;
+    return FizzyExecutionResult {
+      .trapped = false,
+      .has_value = true,
+      .value = out
+    };
+  } else {
+    return FizzyExecutionResult {
+      .trapped = true,
+      .has_value = false,
+      .value = 0
+    };
   }
 }
 
@@ -29,21 +55,13 @@ fizzy_trampoline_0args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr = (uint64_t(*)(HostCallContext *))(fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_0args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 FizzyExecutionResult
@@ -55,22 +73,13 @@ fizzy_trampoline_1args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr =
-      (uint64_t(*)(HostCallContext *, uint64_t))(fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context, args[0].i64);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_1args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context, args[0].i64);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 FizzyExecutionResult
@@ -82,22 +91,13 @@ fizzy_trampoline_2args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr = (uint64_t(*)(HostCallContext *, uint64_t, uint64_t))(
-      fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context, args[0].i64, args[1].i64);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_2args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context, args[0].i64, args[1].i64);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 FizzyExecutionResult
@@ -109,23 +109,13 @@ fizzy_trampoline_3args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr = (uint64_t(*)(HostCallContext *, uint64_t, uint64_t, uint64_t))(
-      fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context, args[0].i64, args[1].i64,
-                     args[2].i64);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_3args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 FizzyExecutionResult
@@ -137,23 +127,13 @@ fizzy_trampoline_4args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr = (uint64_t(*)(HostCallContext *, uint64_t, uint64_t, uint64_t,
-                           uint64_t))(fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context, args[0].i64, args[1].i64,
-                     args[2].i64, args[3].i64);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_4args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 FizzyExecutionResult
@@ -165,23 +145,13 @@ fizzy_trampoline_5args(void *host_ctx, FizzyInstance *instance,
   FizzyTrampolineHostContext *fizzy_host_ctx =
       reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
 
-  auto *ptr = (uint64_t(*)(HostCallContext *, uint64_t, uint64_t, uint64_t,
-                           uint64_t, uint64_t))(fizzy_host_ctx->fn_pointer);
-  FizzyValue out;
-  out.i64 = 0;
-  try {
-    out.i64 = (*ptr)(fizzy_host_ctx->real_context, args[0].i64, args[1].i64,
-                     args[2].i64, args[3].i64, args[4].i64);
-    return FizzyExecutionResult{.trapped = false,
-                                .has_value = true,
-                                .value = out};
-  } catch (HostError &) {
-    return FizzyExecutionResult{.trapped = true,
-                                .has_value = false,
-                                .value = out};
-  }
-  // other errors result in std::terminate
-  std::terminate();
+
+  TrampolineResult host_fn_result 
+    = c_call_5args(fizzy_host_ctx -> fn_pointer,
+    fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64);
+
+  return handle_trampline_result(host_fn_result,
+    fizzy_host_ctx -> errno_);
 }
 
 Fizzy_WasmContext::Fizzy_WasmContext(uint32_t max_stack_bytes)
@@ -284,142 +254,65 @@ Fizzy_WasmRuntime::lazy_link()
   return (m_instance != nullptr);
 }
 
-detail::MeteredReturn<uint64_t>
-Fizzy_WasmRuntime::invoke(std::string const &method_name,
-                          const uint64_t gas_limit)
+InvokeStatus<uint64_t>
+Fizzy_WasmRuntime::invoke(std::string const &method_name)
 {
-  set_available_gas(gas_limit);
-
   if (!lazy_link()) {
-    return {std::nullopt, 0, ErrorType::HostError};
+    return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR};
   }
 
   uint32_t fn_index;
   if (!fizzy_find_exported_function_index(m_module, method_name.c_str(),
                                           &fn_index)) {
-    return {std::nullopt, 0, ErrorType::HostError};
+    return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR};
   }
 
   const FizzyExecutionResult result =
       fizzy_execute(m_instance, fn_index, NULL, exec_ctx);
 
-  uint64_t remaining_gas = get_available_gas();
   if (result.trapped) {
-    return {std::nullopt, gas_limit - remaining_gas, ErrorType::HostError};
+    switch(errno_last_call_) {
+    case HostFnError::NONE_OR_RECOVERABLE:
+      // trap must be from some source within wasm
+      return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR};
+    case HostFnError::OUT_OF_GAS:
+      return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::OUT_OF_GAS_ERROR};
+    case HostFnError::UNRECOVERABLE:
+      return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::UNRECOVERABLE};
+    case HostFnError::RETURN_SUCCESS:
+      return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::RETURN};
+    }
+    throw std::runtime_error("unreachable");
   }
 
   if (!result.has_value) {
-    throw UnrecoverableSystemError("invalid return from invoke");
+    throw std::runtime_error("invalid return from invoke");
   }
 
-  return {result.value.i64, gas_limit - remaining_gas, ErrorType::None};
+  return result.value.i64;
 }
 
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *))
+bool 
+Fizzy_WasmRuntime::link_fn_nargs(std::string const& module_name,
+    std::string const& fn_name,
+    void* fn,
+    uint8_t nargs)
 {
+  if (nargs > 5) {
+    //unimplemented
+    return false;
+  }
   FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
+    .module_name = module_name,
+    .method_name = fn_name,
+    .inputs = std::vector<FizzyValueType>(nargs, FizzyValueTypeI64),
+    .output = FizzyValueTypeI64,
+    .trampoline_ctx = 
+      std::make_unique<FizzyTrampolineHostContext>(fn, host_call_context, &errno_last_call_)
+  };
   imported_functions.emplace_back(std::move(import));
-}
 
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *, uint64_t))
-{
-  FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {FizzyValueTypeI64},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
-  imported_functions.emplace_back(std::move(import));
-}
-
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *, uint64_t, uint64_t))
-{
-  FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {FizzyValueTypeI64, FizzyValueTypeI64},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
-  imported_functions.emplace_back(std::move(import));
-}
-
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *, uint64_t, uint64_t,
-                                         uint64_t))
-{
-  FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {FizzyValueTypeI64, FizzyValueTypeI64, FizzyValueTypeI64},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
-  imported_functions.emplace_back(std::move(import));
-}
-
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *, uint64_t, uint64_t,
-                                         uint64_t, uint64_t))
-{
-  FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {FizzyValueTypeI64, FizzyValueTypeI64, FizzyValueTypeI64,
-                 FizzyValueTypeI64},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
-  imported_functions.emplace_back(std::move(import));
-}
-
-void
-Fizzy_WasmRuntime::link_fn(std::string const &module_name,
-                           std::string const &fn_name,
-                           uint64_t (*f)(HostCallContext *, uint64_t, uint64_t,
-                                         uint64_t, uint64_t, uint64_t))
-{
-  FizzyLazyFunctionImport import{
-      .module_name = module_name,
-      .method_name = fn_name,
-      .inputs = {FizzyValueTypeI64, FizzyValueTypeI64, FizzyValueTypeI64,
-                 FizzyValueTypeI64, FizzyValueTypeI64},
-      .output = FizzyValueTypeI64,
-      .trampoline_ctx =
-          std::make_unique<FizzyTrampolineHostContext>((void *)f,
-                                                       host_call_context)};
-
-  imported_functions.emplace_back(std::move(import));
+  return true;
 }
 
 FizzyExternalFn
@@ -495,30 +388,31 @@ Fizzy_WasmRuntime::set_available_gas(uint64_t gas)
   *fizzy_get_execution_context_ticks(exec_ctx) = actual_set;
 }
 
-std::pair<uint8_t *, uint32_t>
+std::span<std::byte>
 Fizzy_WasmRuntime::get_memory()
 {
   if (!lazy_link()) {
-    return {nullptr, 0};
+    return {};
   }
 
   if (!m_instance) {
-    return {nullptr, 0};
+    return {};
   }
 
-  return {fizzy_get_instance_memory_data(m_instance),
-          fizzy_get_instance_memory_size(m_instance)};
+  return std::span<std::byte>(reinterpret_cast<std::byte*>(fizzy_get_instance_memory_data(m_instance)),
+          fizzy_get_instance_memory_size(m_instance));
 }
 
-std::pair<const uint8_t *, uint32_t>
+std::span<const std::byte>
 Fizzy_WasmRuntime::get_memory() const
 {
   if (!m_instance) {
-    return {nullptr, 0};
+    return {};
   }
 
-  return {fizzy_get_instance_memory_data(m_instance),
-          fizzy_get_instance_memory_size(m_instance)};
+  return std::span<const std::byte>(
+    reinterpret_cast<const std::byte*>(fizzy_get_instance_memory_data(m_instance)),
+          fizzy_get_instance_memory_size(m_instance));
 }
 
 } // namespace wasm_api
