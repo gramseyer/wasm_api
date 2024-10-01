@@ -21,7 +21,12 @@
   (import "test" "arg3" (func $call3 (param i64 i64 i64) (result i64)))
   (import "test" "arg4" (func $call4 (param i64 i64 i64 i64) (result i64)))
   (import "test" "arg5" (func $call5 (param i64 i64 i64 i64 i64) (result i64)))
-
+  (import "test" "noret_arg0" (func $noret_call0))
+  (import "test" "noret_arg1" (func $noret_call1 (param i64)))
+  (import "test" "noret_arg2" (func $noret_call2 (param i64 i64)))
+  (import "test" "noret_arg3" (func $noret_call3 (param i64 i64 i64)))
+  (import "test" "noret_arg4" (func $noret_call4 (param i64 i64 i64 i64)))
+  (import "test" "noret_arg5" (func $noret_call5 (param i64 i64 i64 i64 i64)))
 
   (func (export "calltest0") (result i64)
     (call $call0)
@@ -46,6 +51,38 @@
   (func (export "calltest5") (result i64)
     (call $call5 (i64.const 1) (i64.const 2) (i64.const 3) (i64.const 4) (i64.const 5))
   )
+
+  (func (export "callnoret0") (result i64)
+    (call $noret_call0)
+    (i64.const 0)
+  )
+
+  (func (export "callnoret1") (result i64)
+    (call $noret_call1 (i64.const 1))
+    (i64.const 0)
+  )
+
+  (func (export "callnoret2") (result i64)
+    (call $noret_call2 (i64.const 1) (i64.const 2))
+    (i64.const 0)
+  )
+
+  (func (export "callnoret3") (result i64)
+    (call $noret_call3 (i64.const 1) (i64.const 2) (i64.const 3))
+    (i64.const 0)
+  )
+
+  (func (export "callnoret4") (result i64)
+    (call $noret_call4 (i64.const 1) (i64.const 2) (i64.const 3) (i64.const 4))
+    (i64.const 0)
+  )
+
+  (func (export "callnoret5") (result i64)
+    (call $noret_call5 (i64.const 1) (i64.const 2) (i64.const 3) (i64.const 4) (i64.const 5))
+    (i64.const 0)
+  )
+
+
 
   (memory 1 1)
   (export "memory" (memory 0))

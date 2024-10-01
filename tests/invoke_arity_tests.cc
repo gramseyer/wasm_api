@@ -68,6 +68,54 @@ HostFnStatus<uint64_t> arity5(HostCallContext* ctx, uint64_t arg0, uint64_t arg1
   return 105;
 }
 
+bool noret_called = false;
+
+HostFnStatus<void> noret_arity0(HostCallContext* ctx) {
+  noret_called = true;
+  std::printf("called noret_arity0\n");
+  return {};
+}
+
+HostFnStatus<void> noret_arity1(HostCallContext* ctx, uint64_t arg0)
+{
+  if (arg0 != 1) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+HostFnStatus<void> noret_arity2(HostCallContext* ctx, uint64_t arg0, uint64_t arg1)
+{
+  if (arg0 != 1) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+HostFnStatus<void> noret_arity3(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+HostFnStatus<void> noret_arity4(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+
+HostFnStatus<void> noret_arity5(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
 
 
 using namespace test;
@@ -89,6 +137,14 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
     ASSERT_TRUE(ctx->link_fn("test", "arg4", &arity4));
     ASSERT_TRUE(ctx->link_fn("test", "arg5", &arity5));
 
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg0", &noret_arity0));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg1", &noret_arity1));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg2", &noret_arity2));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg3", &noret_arity3));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg4", &noret_arity4));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg5", &noret_arity5));
+
+
     runtime = ctx->new_runtime_instance(s, nullptr);
 
     ASSERT_TRUE(!!runtime);
@@ -96,7 +152,7 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
   std::unique_ptr<WasmContext> ctx;
   std::unique_ptr<WasmRuntime> runtime;
-}; 
+};
 
 TEST_P(InvokeArityTests, arity0)
 {
@@ -138,6 +194,44 @@ TEST_P(InvokeArityTests, arity5)
   auto res = runtime->invoke("calltest5");
   ASSERT_TRUE(!!res.result);
   EXPECT_EQ(*res.result, 105);
+}
+
+TEST_P(InvokeArityTests, noreturn)
+{
+  noret_called = false;
+  auto res = runtime->invoke("callnoret0");
+  EXPECT_TRUE(noret_called);
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg1)
+{
+  auto res = runtime->invoke("callnoret1");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg2)
+{
+  auto res = runtime->invoke("callnoret2");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg3)
+{
+  auto res = runtime->invoke("callnoret3");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg4)
+{
+  auto res = runtime->invoke("callnoret4");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg5)
+{
+  auto res = runtime->invoke("callnoret5");
+  EXPECT_TRUE(!!res.result);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, InvokeArityTests,

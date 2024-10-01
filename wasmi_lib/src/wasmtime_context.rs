@@ -4,7 +4,7 @@ use core::ffi::c_void;
 
 use crate::external_call::{HostFnError, TrampolineResult, TrampolineError};
 use crate::external_call;
-use crate::common::{string_from_parts, BorrowBypass};
+use crate::common::{string_from_parts, BorrowBypass, WasmValueType};
 
 // A WasmtimeContext provides shared data structures
 // for multiple Wasmtime runtimes.
@@ -18,6 +18,14 @@ fn wasmtime_handle_trampoline_error(result: TrampolineResult) -> Result<u64, was
     let err: HostFnError = unsafe { std::mem::transmute(result.panic) };
     match err {
         HostFnError::NONE_OR_RECOVERABLE => Ok(result.result),
+        _ => Err(wasmtime::Error::new(TrampolineError { error : err })),
+    }
+}
+
+fn wasmtime_handle_trampoline_error_noret(result: TrampolineResult) -> Result<(), wasmtime::Error> {
+    let err: HostFnError = unsafe { std::mem::transmute(result.panic) };
+    match err {
+        HostFnError::NONE_OR_RECOVERABLE => Ok(()),
         _ => Err(wasmtime::Error::new(TrampolineError { error : err })),
     }
 }
@@ -240,6 +248,208 @@ impl WasmtimeContext {
             Err(err) => Err(err.into()),
         }
     }
+
+    fn link_function_0args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>| -> Result<(), wasmtime::Error> {
+
+                let res = unsafe {
+                    external_call::c_call_0args_noret(x.clone().fn_pointer, caller.data().clone())
+                };
+
+                return wasmtime_handle_trampoline_error_noret(res);
+        }) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn link_function_1args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>,
+                  arg1: u64|
+                  -> Result<(), wasmtime::Error> {
+                let res = unsafe {
+                    external_call::c_call_1args_noret(
+                        x.clone().fn_pointer,
+                        caller.data().clone(),
+                        arg1,
+                    )
+                };
+
+                return wasmtime_handle_trampoline_error_noret(res);
+            },
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn link_function_2args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>,
+                  arg1: u64,
+                  arg2: u64|
+                  -> Result<(), wasmtime::Error> {
+                let res = unsafe {
+                    external_call::c_call_2args_noret(
+                        x.clone().fn_pointer,
+                        caller.data().clone(),
+                        arg1,
+                        arg2,
+                    )
+                };
+                return wasmtime_handle_trampoline_error_noret(res);
+            },
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn link_function_3args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>,
+                  arg1: u64,
+                  arg2: u64,
+                  arg3: u64|
+                  -> Result<(), wasmtime::Error> {
+                let res = unsafe {
+                    external_call::c_call_3args_noret(
+                        x.clone().fn_pointer,
+                        caller.data().clone(),
+                        arg1,
+                        arg2,
+                        arg3,
+                    )
+                };
+                return wasmtime_handle_trampoline_error_noret(res);
+            },
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn link_function_4args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>,
+                  arg1: u64,
+                  arg2: u64,
+                  arg3: u64,
+                  arg4: u64|
+                  -> Result<(), wasmtime::Error> {
+                let res = unsafe {
+                    external_call::c_call_4args_noret(
+                        x.clone().fn_pointer,
+                        caller.data().clone(),
+                        arg1,
+                        arg2,
+                        arg3,
+                        arg4,
+                    )
+                };
+                return wasmtime_handle_trampoline_error_noret(res);
+            },
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn link_function_5args_noret(
+        &mut self,
+        fn_pointer: *mut c_void,
+        import_name: &str,
+        fn_name: &str,
+    ) -> Result<(), Error> {
+        let x = BorrowBypass {
+            fn_pointer: fn_pointer.clone(),
+        };
+
+        match self.linker.func_wrap(
+            import_name,
+            fn_name,
+            move |caller: Caller<'_, *mut c_void>,
+                  arg1: u64,
+                  arg2: u64,
+                  arg3: u64,
+                  arg4: u64,
+                  arg5: u64|
+                  -> Result<(), wasmtime::Error> {
+                let res = unsafe {
+                    external_call::c_call_5args_noret(
+                        x.clone().fn_pointer,
+                        caller.data().clone(),
+                        arg1,
+                        arg2,
+                        arg3,
+                        arg4,
+                        arg5,
+                    )
+                };
+                return wasmtime_handle_trampoline_error_noret(res);
+            },
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.into()),
+        }
+    }
 }
 
 #[no_mangle]
@@ -251,6 +461,7 @@ pub extern "C" fn wasmtime_link_nargs(
     method_name_len: u32,
     function_pointer: *mut c_void,
     nargs: u8,
+    ret_type : u8 // WasmValueType
 ) -> bool // true if success
 {
     let context: *mut WasmtimeContext =
@@ -262,6 +473,11 @@ pub extern "C" fn wasmtime_link_nargs(
     assert!(method_name != core::ptr::null());
 
     // assert module name & method_name nonzero
+
+    let ret_type_enum = match WasmValueType::from_u8(ret_type) {
+        None => {return false;},
+        Some(x) => x
+    };
 
     let module = match string_from_parts(module_name, module_name_len) {
         Ok(x) => x,
@@ -279,16 +495,33 @@ pub extern "C" fn wasmtime_link_nargs(
 
     let c = unsafe { &mut *context };
 
-    let res = match nargs {
-        0 => c.link_function_0args(function_pointer, &module, &method),
-        1 => c.link_function_1args(function_pointer, &module, &method),
-        2 => c.link_function_2args(function_pointer, &module, &method),
-        3 => c.link_function_3args(function_pointer, &module, &method),
-        4 => c.link_function_4args(function_pointer, &module, &method),
-        5 => c.link_function_5args(function_pointer, &module, &method),
-        _ => {
-            return false;
-        }
+    let res = match ret_type_enum {
+        WasmValueType::U64 => {
+            match nargs {
+                0 => c.link_function_0args(function_pointer, &module, &method),
+                1 => c.link_function_1args(function_pointer, &module, &method),
+                2 => c.link_function_2args(function_pointer, &module, &method),
+                3 => c.link_function_3args(function_pointer, &module, &method),
+                4 => c.link_function_4args(function_pointer, &module, &method),
+                5 => c.link_function_5args(function_pointer, &module, &method),
+                _ => {
+                    return false;
+                }
+            }
+        },
+        WasmValueType::VOID => {
+            match nargs {
+                0 => c.link_function_0args_noret(function_pointer, &module, &method),
+                1 => c.link_function_1args_noret(function_pointer, &module, &method),
+                2 => c.link_function_2args_noret(function_pointer, &module, &method),
+                3 => c.link_function_3args_noret(function_pointer, &module, &method),
+                4 => c.link_function_4args_noret(function_pointer, &module, &method),
+                5 => c.link_function_5args_noret(function_pointer, &module, &method),
+                _ => {
+                    return false;
+                }
+            }
+        },
     };
 
     match res {

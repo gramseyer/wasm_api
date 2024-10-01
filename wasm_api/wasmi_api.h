@@ -23,7 +23,8 @@ public:
     bool link_fn_nargs(std::string const& module_name,
         std::string const& fn_name,
         void* fn,
-        uint8_t nargs) override;
+        uint8_t nargs,
+        WasmValueType ret_type) override;
 
     bool finish_link(std::unique_ptr<WasmRuntime>& pre_link) {return true;}
 
@@ -44,7 +45,8 @@ public:
     bool link_fn_nargs(std::string const& module_name,
         std::string const& fn_name,
         void* fn,
-        uint8_t nargs) override {
+        uint8_t nargs,
+        WasmValueType ret_type) override {
         return false;
     }
 

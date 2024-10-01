@@ -58,6 +58,7 @@ SOFTWARE.
 #include <span>
 
 #include "wasm_api/error.h"
+#include "wasm_api/value_type.h"
 
 #include "wasm3/source/wasm3.h"
 
@@ -140,6 +141,103 @@ get_args_from_stack(stack_type &sp, mem_type mem, std::tuple<Args...> &tuple)
 {
   std::apply([&](auto &...item) { (arg_from_stack(item, sp, mem), ...); },
              tuple);
+}
+
+template<typename ret_type, std::same_as<uint64_t>... Args>
+const void*
+wrap_fn_return(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type mem)
+{
+    static_assert(!std::is_void_v<ret_type>);
+    m3ApiReturnType(ret_type);
+    
+    using args_tuple_t = std::tuple<Args...>;
+
+    args_tuple_t args;
+
+    get_args_from_stack(_sp, mem, args);
+
+    void* fn_pointer = _ctx -> userdata;
+
+    constexpr size_t nargs = std::tuple_size_v<args_tuple_t>;
+
+    TrampolineResult result;
+
+    if constexpr (nargs == 0) {
+        result = c_call_0args(fn_pointer, m3_GetUserData(rt));
+    } else if constexpr (nargs == 1) {
+        result = c_call_1args(fn_pointer, m3_GetUserData(rt), std::get<0>(args));
+    } else if constexpr (nargs == 2) {
+        result = c_call_2args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args));
+    } else if constexpr (nargs == 3) {
+        result = c_call_3args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args));
+    } else if constexpr (nargs == 4) {
+        result = c_call_4args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args));
+    } else if constexpr (nargs == 5) {
+        result = c_call_5args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args));
+    } else {
+        std::terminate();
+    }
+
+    switch (result.panic) {
+      case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
+        m3ApiReturn(result.result);
+        std::terminate();  // asserting that m3ApiReturn macro actually returns
+      case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
+        m3ApiTrap(m3Err_unrecoverableSystemError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
+        m3ApiTrap(m3Err_outOfGasError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
+        m3ApiTrap(m3Err_returnSuccessError);
+      default:
+        throw std::runtime_error("impossible");
+    }
+}
+
+template<std::same_as<uint64_t>... Args>
+const void*
+wrap_fn_noreturn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type mem)
+{    
+    using args_tuple_t = std::tuple<Args...>;
+
+    args_tuple_t args;
+
+    get_args_from_stack(_sp, mem, args);
+
+    void* fn_pointer = _ctx -> userdata;
+
+    constexpr size_t nargs = std::tuple_size_v<args_tuple_t>;
+
+    TrampolineResult result;
+
+    if constexpr (nargs == 0) {
+        result = c_call_0args_noret(fn_pointer, m3_GetUserData(rt));
+    } else if constexpr (nargs == 1) {
+        result = c_call_1args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args));
+    } else if constexpr (nargs == 2) {
+        result = c_call_2args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args));
+    } else if constexpr (nargs == 3) {
+        result = c_call_3args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args));
+    } else if constexpr (nargs == 4) {
+        result = c_call_4args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args));
+    } else if constexpr (nargs == 5) {
+        result = c_call_5args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args));
+    } else {
+        std::terminate();
+    }
+
+    switch (result.panic) {
+      case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
+        m3ApiSuccess();
+        std::terminate();  // asserting that m3ApiSuccess macro actually returns
+      case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
+        m3ApiTrap(m3Err_unrecoverableSystemError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
+        m3ApiTrap(m3Err_outOfGasError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
+        m3ApiTrap(m3Err_returnSuccessError);
+      default:
+        throw std::runtime_error("impossible");
+    }
 }
 
 static const void *
@@ -342,10 +440,21 @@ static_link_nargs(IM3Module io_module, const char *const i_moduleName,
            void *function, // expects signature of
                            // HostFnStatus<uint64_t>(HostCallContext*, nargs
                            // repeated uint64)
-           uint8_t nargs)
+           uint8_t nargs,
+           wasm_api::WasmValueType ret_type)
 {
-  constexpr auto arg_sig = [](uint8_t nargs) -> std::string {
-    std::string out = "I(";
+  using enum wasm_api::WasmValueType;
+  auto arg_sig = [&nargs, &ret_type] () -> std::string {
+    std::string out;
+    switch(ret_type) {
+    case VOID:
+        out += "v";
+        break;
+    case U64:
+        out += "I";
+        break;
+    }
+    out += "(";
     for (auto i = 0u; i < nargs; i++) {
       out += "I";
     }
@@ -353,30 +462,63 @@ static_link_nargs(IM3Module io_module, const char *const i_moduleName,
     return out;
   };
 
-  auto *wrapped_fn_pointer = &detail::wrap_fn_0args;
-  switch (nargs) {
-  case 0:
+  decltype(&detail::wrap_fn_noreturn<>) wrapped_fn_pointer = nullptr;
+
+  // gross but it works
+  switch(ret_type) {
+  case U64:
+      switch (nargs) {
+      case 0:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t>;
+        break;
+      case 1:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t>;
+        break;
+      case 2:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t>;
+        break;
+      case 3:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 4:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 5:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      default:
+        return false;
+      }
     break;
-  case 1:
-    wrapped_fn_pointer = &detail::wrap_fn_1args;
-    break;
-  case 2:
-    wrapped_fn_pointer = &detail::wrap_fn_2args;
-    break;
-  case 3:
-    wrapped_fn_pointer = &detail::wrap_fn_3args;
-    break;
-  case 4:
-    wrapped_fn_pointer = &detail::wrap_fn_4args;
-    break;
-  case 5:
-    wrapped_fn_pointer = &detail::wrap_fn_5args;
+  case VOID:
+    switch (nargs) {
+      case 0:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<>;
+        break;
+      case 1:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t>;
+        break;
+      case 2:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t>;
+        break;
+      case 3:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t>;
+        break;
+      case 4:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 5:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      default:
+        return false;
+      }
     break;
   default:
-    return false;
+    std::terminate();
   }
 
-  auto cur_sig = arg_sig(nargs);
+  auto cur_sig = arg_sig();
 
   M3Result result =
       m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
@@ -487,10 +629,10 @@ protected:
 class module {
 public:
 
-  // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64t repeated nargs)
+  // expected signature: HostFnStatus<ret_type>(HostCallContext*, uint64t repeated nargs)
   bool
   link_nargs(const char* module, const char* function_name,
-      void* function_pointer, uint8_t nargs);
+      void* function_pointer, uint8_t nargs, wasm_api::WasmValueType ret_type);
 
   ~module()
   {
@@ -682,9 +824,9 @@ runtime::get_memory()
 // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64t repeated nargs)
 inline bool
 module::link_nargs(const char* module, const char* function_name,
-    void* function_pointer, uint8_t nargs)
+    void* function_pointer, uint8_t nargs, wasm_api::WasmValueType ret_type)
 {
-    return static_link_nargs(m_module, module, function_name, function_pointer, nargs);
+    return static_link_nargs(m_module, module, function_name, function_pointer, nargs, ret_type);
 }
 
 } // namespace wasm3

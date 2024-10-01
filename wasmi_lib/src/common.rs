@@ -19,3 +19,19 @@ pub fn string_from_parts(bytes: *const u8, len: u32) -> Result<String, Utf8Error
         Err(x) => Err(x),
     }
 }
+
+#[repr(u8)]
+pub enum WasmValueType {
+    VOID = 0,
+    U64 = 1
+}
+
+impl WasmValueType {
+    pub fn from_u8(input : u8) -> Option<Self> {
+        match input {
+            x if x == WasmValueType::VOID as u8 => {return Some(WasmValueType::VOID);},
+            x if x == WasmValueType::U64 as u8 => {return Some(WasmValueType::U64);},
+            _ => {return None;},
+        }
+    }
+}

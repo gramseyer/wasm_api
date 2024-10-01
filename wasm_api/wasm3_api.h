@@ -63,9 +63,10 @@ public:
         std::string const& module_name,
         std::string const& fn_name,
         void* fn,
-        uint8_t nargs) override
+        uint8_t nargs,
+        WasmValueType ret_type) override
     {
-        return module -> link_nargs(module_name.c_str(), fn_name.c_str(), fn, nargs);
+        return module -> link_nargs(module_name.c_str(), fn_name.c_str(), fn, nargs, ret_type);
     }
 
     InvokeStatus<uint64_t> invoke(std::string const& method_name) override;

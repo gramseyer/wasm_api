@@ -17,6 +17,7 @@
  */
 
 #include "wasm_api/error.h"
+#include "wasm_api/value_type.h"
 
 #include <array>
 #include <bit>
@@ -53,11 +54,25 @@ struct MeteredReturn {
   uint64_t gas_consumed;
 };
 
+template<typename T>
+struct WasmValueTypeLookup;
+
+template<>
+struct WasmValueTypeLookup<void> {
+    constexpr static WasmValueType VAL = WasmValueType::VOID;
+};
+
+template<>
+struct WasmValueTypeLookup<uint64_t> {
+    constexpr static WasmValueType VAL = WasmValueType::U64;
+};
+
 struct DefaultLinkEntry {
     std::string module_name;
     std::string fn_name;
     void* fn;
     uint8_t nargs;
+    WasmValueType ret_type;
 };
 
 class WasmRuntimeImpl;
@@ -72,12 +87,14 @@ public:
   virtual bool link_fn_nargs(std::string const& module_name,
     std::string const& fn_name,
     void* fn,
-    uint8_t nargs) {
+    uint8_t nargs,
+    WasmValueType ret_type) {
         link_entries.emplace_back(
             module_name,
             fn_name,
             fn,
-            nargs);
+            nargs,
+            ret_type);
     return true;
   }
 
@@ -112,7 +129,8 @@ public:
   virtual bool link_fn_nargs(std::string const& module_name,
     std::string const& fn_name,
     void* fn,
-    uint8_t nargs) = 0;
+    uint8_t nargs,
+    WasmValueType ret_type) = 0;
 
   virtual ~WasmRuntimeImpl() {}
 
@@ -150,15 +168,16 @@ public:
 
   ~WasmContext();
 
-  template<std::same_as<uint64_t>... Args>
+  template<typename ret_type, std::same_as<uint64_t>... Args>
   bool link_fn(std::string const& module_name, std::string const& fn_name,
-               HostFnStatus<uint64_t> (*f)(HostCallContext *, Args...))
+               HostFnStatus<ret_type> (*f)(HostCallContext *, Args...))
   {
     if (!impl) {
         return false;
     }
     return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
-                         (kArgCount<Args>() + ... + 0));
+                         (kArgCount<Args>() + ... + 0),
+                         detail::WasmValueTypeLookup<ret_type>::VAL);
   }
 
 private:
@@ -197,7 +216,7 @@ public:
         return false;
     }
     return impl -> link_fn_nargs(entry.module_name, entry.fn_name, reinterpret_cast<void *>(entry.fn),
-        entry.nargs);
+        entry.nargs, entry.ret_type);
   }
 
   std::span<std::byte> get_memory();

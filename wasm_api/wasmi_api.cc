@@ -102,8 +102,13 @@ bool
 Wasmi_WasmContext::link_fn_nargs(std::string const& module_name,
     std::string const& fn_name,
     void* fn,
-    uint8_t nargs)
+    uint8_t nargs,
+    WasmValueType ret_type)
 {
+    if (ret_type != WasmValueType::U64) {
+        return false;
+    }
+    
     return wasmi_link_nargs(context_pointer,
                      (const uint8_t*)module_name.c_str(),
                      module_name.size(),

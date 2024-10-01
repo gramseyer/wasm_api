@@ -59,7 +59,8 @@ public:
   bool link_fn_nargs(std::string const& module_name,
     std::string const& fn_name,
     void* fn,
-    uint8_t nargs);
+    uint8_t nargs,
+    WasmValueType ret_type);
 
   InvokeStatus<uint64_t> invoke(std::string const &method_name);
 

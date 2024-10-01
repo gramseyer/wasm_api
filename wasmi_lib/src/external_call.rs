@@ -97,4 +97,44 @@ extern "C" {
         arg4: u64,
         arg5: u64,
     ) -> TrampolineResult;
+
+    pub fn c_call_0args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+    ) -> TrampolineResult;
+    pub fn c_call_1args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+        arg1: u64,
+    ) -> TrampolineResult;
+    pub fn c_call_2args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+        arg1: u64,
+        arg2: u64,
+    ) -> TrampolineResult;
+    pub fn c_call_3args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+        arg1: u64,
+        arg2: u64,
+        arg3: u64,
+    ) -> TrampolineResult;
+    pub fn c_call_4args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+        arg1: u64,
+        arg2: u64,
+        arg3: u64,
+        arg4: u64,
+    ) -> TrampolineResult;
+    pub fn c_call_5args_noret(
+        fn_pointer: *mut c_void,
+        userctx: *mut c_void,
+        arg1: u64,
+        arg2: u64,
+        arg3: u64,
+        arg4: u64,
+        arg5: u64,
+    ) -> TrampolineResult;
 }
