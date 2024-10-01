@@ -305,7 +305,8 @@ pub extern "C" fn stitch_link_nargs(
     method_name : *const u8,
     method_name_len : u32,
     function_pointer: *mut c_void,
-    nargs : u8) -> bool
+    nargs : u8,
+    ret_type: u8) -> bool
 {
     let module = match string_from_parts(module_name, module_name_len) {
         Ok(x) => x,

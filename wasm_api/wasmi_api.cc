@@ -29,7 +29,8 @@ extern "C"
                           const uint8_t* method_bytes,
                           const uint32_t method_bytes_len,
                           void* fn_pointer,
-                          uint8_t nargs);
+                          uint8_t nargs,
+                          uint8_t ret_type);
 
     wasm_api::WasmiContextPtr new_wasmi_context(uint32_t max_stack_bytes);
     void free_wasmi_context(wasm_api::WasmiContextPtr wasmi_context);
@@ -105,17 +106,14 @@ Wasmi_WasmContext::link_fn_nargs(std::string const& module_name,
     uint8_t nargs,
     WasmValueType ret_type)
 {
-    if (ret_type != WasmValueType::U64) {
-        return false;
-    }
-    
     return wasmi_link_nargs(context_pointer,
                      (const uint8_t*)module_name.c_str(),
                      module_name.size(),
                      (const uint8_t*)fn_name.c_str(),
                      fn_name.size(),
                      (void*)fn,
-                     nargs);
+                     nargs,
+                     static_cast<uint8_t>(ret_type));
 }
 
 InvokeStatus<uint64_t> 

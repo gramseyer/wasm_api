@@ -36,7 +36,8 @@ extern "C"
                            const uint8_t* method_bytes,
                            const uint32_t method_bytes_len,
                            void* fn_pointer,
-                           uint8_t nargs);
+                           uint8_t nargs,
+                           uint8_t ret_type);
 
     void* new_stitch_context();
     void free_stitch_context(void* stitch_context);
@@ -142,6 +143,7 @@ Stitch_WasmRuntime::link_fn_nargs(std::string const& module_name,
 {
     if (ret_type != WasmValueType::U64) {
         return false;
+        // unimpl;
     }
     return stitch_link_nargs(
         runtime_pointer,
@@ -150,7 +152,8 @@ Stitch_WasmRuntime::link_fn_nargs(std::string const& module_name,
         (const uint8_t*)fn_name.c_str(),
         fn_name.size(),
         (void*)fn,
-        nargs);
+        nargs,
+        static_cast<uint8_t>(ret_type));
 }
 
 bool
