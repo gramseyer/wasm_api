@@ -5,20 +5,14 @@
 #include "wasm_api/ffi_trampolines.h"
 
 #include <cinttypes>
-
-
-struct WasmiInvokeResult
-{
-    uint64_t result;
-    uint8_t error;
-};
+#include <cassert>
 
 extern "C"
 {
 
     MemorySlice wasmi_get_memory(void* runtime_pointer);
 
-    WasmiInvokeResult wasmi_invoke(void* runtime_pointer,
+    FFIInvokeResult wasmi_invoke(void* runtime_pointer,
                                    const uint8_t* method_bytes,
                                    const uint32_t method_len);
 
@@ -62,7 +56,9 @@ Wasmi_WasmContext::~Wasmi_WasmContext()
 
 Wasmi_WasmRuntime::Wasmi_WasmRuntime(void* wasmi_runtime_ptr)
     : runtime_pointer(wasmi_runtime_ptr)
-{}
+{
+    assert(!!runtime_pointer);
+}
 
 Wasmi_WasmRuntime::~Wasmi_WasmRuntime()
 {
@@ -126,7 +122,7 @@ Wasmi_WasmRuntime::invoke(std::string const &method_name)
                           static_cast<uint32_t>(method_name.size()));
 
 
-    InvokeError err = static_cast<InvokeError>(invoke_res.error);
+    InvokeError err = static_cast<InvokeError>(invoke_res.invoke_panic);
     if (err == InvokeError::NONE) {
         return invoke_res.result;
     }

@@ -1,6 +1,7 @@
 use core::ffi::c_void;
+
 use wasmi::core::HostError;
-use wasmi::Error;
+use std::error::Error;
 
 use core::fmt;
 
@@ -37,8 +38,8 @@ pub enum HostFnError {
 
 #[repr(C)]
 pub struct TrampolineResult {
-    result: u64,
-    panic: u8, // HostFnError
+    pub result: u64,
+    pub panic: u8, // HostFnError
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -51,6 +52,8 @@ impl fmt::Display for TrampolineError {
         write!(f, "TrampolineError res={}", self.error as u8)
     }
 }
+
+impl Error for TrampolineError {}
 
 impl HostError for TrampolineError {}
 
@@ -94,12 +97,4 @@ extern "C" {
         arg4: u64,
         arg5: u64,
     ) -> TrampolineResult;
-}
-
-pub fn handle_trampoline_error(result: TrampolineResult) -> Result<u64, Error> {
-    let err: HostFnError = unsafe { std::mem::transmute(result.panic) };
-    match err {
-        HostFnError::NONE_OR_RECOVERABLE => Ok(result.result),
-        _ => Err(Error::host(TrampolineError { error : err })),
-    }
 }

@@ -56,6 +56,7 @@ INSTANTIATE_TEST_SUITE_P(AllEngines, MissingImportedFnTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
                           wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
                           wasm_api::SupportedWasmEngine::WASMI,
-                          wasm_api::SupportedWasmEngine::FIZZY));
+                          wasm_api::SupportedWasmEngine::FIZZY,
+                          wasm_api::SupportedWasmEngine::WASMTIME));
 
 } /* wasm_api */

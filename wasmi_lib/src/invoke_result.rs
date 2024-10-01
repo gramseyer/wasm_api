@@ -11,22 +11,21 @@ pub enum InvokeError {
   RETURN = 4,
 }
 
-
 #[repr(C)]
-pub struct WasmiInvokeResult {
+pub struct FFIInvokeResult {
     result: u64,
     error: u8, // InvokeError
 }
 
-impl WasmiInvokeResult {
-    pub fn error(err: InvokeError) -> WasmiInvokeResult {
+impl FFIInvokeResult {
+    pub fn error(err: InvokeError) -> FFIInvokeResult {
         Self {
             result: 0,
             error: err as u8,
         }
     }
 
-    pub fn success(res: u64) -> WasmiInvokeResult {
+    pub fn success(res: u64) -> FFIInvokeResult {
         Self {
             result: res,
             error: InvokeError::NONE as u8,

@@ -1,10 +1,10 @@
 use core::ffi::c_void;
-use std::slice;
+use core::slice;
 use wasmi::{Instance, Module, Store, Val};
 
-use crate::context::WasmiContext;
+use crate::wasmi_context::WasmiContext;
 use crate::external_call;
-use crate::invoke_result::{InvokeError, WasmiInvokeResult};
+use crate::invoke_result::{InvokeError, FFIInvokeResult};
 
 // A WasmiRuntime implements a single WebAssembly module,
 // with the ability to invoke exported functions and call
@@ -32,16 +32,16 @@ fn assert_runtime_not_null(runtime: *const WasmiRuntime) {
     assert!(runtime != core::ptr::null());
 }
 
-fn handle_trap_code(code: wasmi::core::TrapCode) -> WasmiInvokeResult {
+fn handle_trap_code(code: wasmi::core::TrapCode) -> FFIInvokeResult {
     // all of the wasmi trap codes, in version 0.36,
     // are raised deterministically.
     // For now, at least, we handle all as deterministic errors.
     match code {
         wasmi::core::TrapCode::OutOfFuel => {
-            return WasmiInvokeResult::error(InvokeError::OUT_OF_GAS_ERROR);
+            return FFIInvokeResult::error(InvokeError::OUT_OF_GAS_ERROR);
         }
         _ => {
-            return WasmiInvokeResult::error(
+            return FFIInvokeResult::error(
                 InvokeError::DETERMINISTIC_ERROR,
             );
         }
@@ -80,11 +80,11 @@ impl WasmiRuntime {
         })
     }
 
-    fn invoke(&mut self, method: &str) -> WasmiInvokeResult {
+    fn invoke(&mut self, method: &str) -> FFIInvokeResult {
         let func = match self.instance.get_func(&self.store, method) {
             Some(v) => v,
             _ => {
-                return WasmiInvokeResult::error(InvokeError::DETERMINISTIC_ERROR);
+                return FFIInvokeResult::error(InvokeError::DETERMINISTIC_ERROR);
             }
         };
 
@@ -95,10 +95,10 @@ impl WasmiRuntime {
         match func_res {
             Ok(_) => match res[0].i64() {
                 Some(v) => {
-                    return WasmiInvokeResult::success(v as u64);
+                    return FFIInvokeResult::success(v as u64);
                 }
                 _ => {
-                    return WasmiInvokeResult::error(
+                    return FFIInvokeResult::error(
                         InvokeError::DETERMINISTIC_ERROR,
                     );
                 }
@@ -115,7 +115,7 @@ impl WasmiRuntime {
                 {
                     Some(trampoline_error) => trampoline_error.clone(),
                     None => {
-                        return WasmiInvokeResult::error(
+                        return FFIInvokeResult::error(
                             InvokeError::UNRECOVERABLE,
                         );
                     }
@@ -124,15 +124,15 @@ impl WasmiRuntime {
                 match my_error.error {
                     external_call::HostFnError::NONE_OR_RECOVERABLE => { panic!("impossible"); },
                     external_call::HostFnError::RETURN_SUCCESS => {
-                        return WasmiInvokeResult::error(
+                        return FFIInvokeResult::error(
                             InvokeError::RETURN);
                     },
                     external_call::HostFnError::OUT_OF_GAS => {
-                        return WasmiInvokeResult::error(
+                        return FFIInvokeResult::error(
                             InvokeError::OUT_OF_GAS_ERROR);
                     },
                     external_call::HostFnError::UNRECOVERABLE => {
-                        return WasmiInvokeResult::error(
+                        return FFIInvokeResult::error(
                             InvokeError::UNRECOVERABLE);
                     }
                 }
@@ -146,14 +146,14 @@ pub extern "C" fn wasmi_invoke(
     runtime_void: *mut c_void,
     method_name: *const u8,
     method_name_len: u32,
-) -> WasmiInvokeResult {
+) -> FFIInvokeResult {
     let runtime: *mut WasmiRuntime =
         unsafe { core::mem::transmute(runtime_void) };
 
     assert_runtime_not_null(runtime);
 
     if method_name == core::ptr::null() {
-        return WasmiInvokeResult::error(InvokeError::DETERMINISTIC_ERROR);
+        return FFIInvokeResult::error(InvokeError::DETERMINISTIC_ERROR);
     }
 
     let method_name_slice =
@@ -161,7 +161,7 @@ pub extern "C" fn wasmi_invoke(
 
     let string = match std::str::from_utf8(&method_name_slice) {
         Ok(v) => v,
-        _ => return WasmiInvokeResult::error(InvokeError::DETERMINISTIC_ERROR),
+        _ => return FFIInvokeResult::error(InvokeError::DETERMINISTIC_ERROR),
     };
 
     let r = unsafe { &mut *runtime };

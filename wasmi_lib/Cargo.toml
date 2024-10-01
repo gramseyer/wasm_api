@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 wasmi = "0.36.0"
+wasmtime = {version = "25.0.1", features = ["runtime", "cranelift"] }
 
 [lib]
 crate-type = ["staticlib", "rlib"]

@@ -81,6 +81,8 @@ public:
     return true;
   }
 
+  virtual bool init_success() { return true; }
+
   virtual bool finish_link(std::unique_ptr<WasmRuntime>& pre_link);
 
 protected:
@@ -135,6 +137,7 @@ enum class SupportedWasmEngine {
   MAKEPAD_STITCH = 1,
   WASMI = 2,
   FIZZY = 3,
+  WASMTIME = 4,
 };
 
 class WasmContext {
@@ -157,7 +160,6 @@ public:
     return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
                          (kArgCount<Args>() + ... + 0));
   }
-
 
 private:
   detail::WasmContextImpl *impl;

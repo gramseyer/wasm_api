@@ -20,6 +20,7 @@
 #include "wasm_api/wasm3_api.h"
 #include "wasm_api/wasmi_api.h"
 #include "wasm_api/fizzy_api.h"
+#include "wasm_api/wasmtime_api.h"
 
 #include <string.h>
 
@@ -41,11 +42,20 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                 return new Wasmi_WasmContext(MAX_STACK_BYTES);
             case SupportedWasmEngine::FIZZY:
                 return new Fizzy_WasmContext(MAX_STACK_BYTES);
+            case SupportedWasmEngine::WASMTIME:
+                return new Wasmtime_WasmContext(MAX_STACK_BYTES);
             default:
                 return nullptr;
         }
     }())
-{}
+{
+    if (impl) {
+        if (!impl -> init_success()) {
+            delete impl;
+            impl = nullptr;
+        }
+    }
+}
 
 std::unique_ptr<WasmRuntime>
 WasmContext::new_runtime_instance(Script const& contract, void* ctxp)

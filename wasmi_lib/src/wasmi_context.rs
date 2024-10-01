@@ -1,10 +1,11 @@
 use wasmi::{Caller, Config, Engine, Error, Linker, StackLimits};
 
 use core::ffi::c_void;
-use core::slice;
-use core::str::Utf8Error;
 
+use crate::external_call::{HostFnError, TrampolineResult, TrampolineError};
 use crate::external_call;
+
+use crate::common::{string_from_parts, BorrowBypass};
 
 // A WasmiContext provides shared data structures
 // for multiple Wasmi runtimes.
@@ -26,21 +27,11 @@ pub struct WasmiContext {
     pub linker: Linker<*mut c_void>,
 }
 
-// Tells rust that it is safe to send this c_void pointer
-// across lambda boundaries
-#[derive(Clone)]
-struct BorrowBypass {
-    fn_pointer: *mut c_void,
-}
-
-unsafe impl Send for BorrowBypass {}
-unsafe impl Sync for BorrowBypass {}
-
-fn string_from_parts(bytes: *const u8, len: u32) -> Result<String, Utf8Error> {
-    let slice = unsafe { slice::from_raw_parts(bytes, len as usize) };
-    match std::str::from_utf8(&slice) {
-        Ok(s) => Ok(s.to_owned()), // TODO check this is a copy and not something weird
-        Err(x) => Err(x),
+pub fn wasmi_handle_trampoline_error(result: TrampolineResult) -> Result<u64, wasmi::Error> {
+    let err: HostFnError = unsafe { std::mem::transmute(result.panic) };
+    match err {
+        HostFnError::NONE_OR_RECOVERABLE => Ok(result.result),
+        _ => Err(wasmi::Error::host(TrampolineError { error : err })),
     }
 }
 
@@ -80,7 +71,7 @@ impl WasmiContext {
                     external_call::c_call_0args(x.clone().fn_pointer, caller.data().clone())
                 };
 
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
         }) {
             Ok(_) => Ok(()),
             Err(err) => Err(err.into()),
@@ -111,7 +102,7 @@ impl WasmiContext {
                     )
                 };
 
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
             },
         ) {
             Ok(_) => Ok(()),
@@ -144,7 +135,7 @@ impl WasmiContext {
                         arg2,
                     )
                 };
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
             },
         ) {
             Ok(_) => Ok(()),
@@ -179,7 +170,7 @@ impl WasmiContext {
                         arg3,
                     )
                 };
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
             },
         ) {
             Ok(_) => Ok(()),
@@ -216,7 +207,7 @@ impl WasmiContext {
                         arg4,
                     )
                 };
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
             },
         ) {
             Ok(_) => Ok(()),
@@ -255,7 +246,7 @@ impl WasmiContext {
                         arg5,
                     )
                 };
-                return external_call::handle_trampoline_error(res);
+                return wasmi_handle_trampoline_error(res);
             },
         ) {
             Ok(_) => Ok(()),

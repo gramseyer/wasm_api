@@ -4,10 +4,20 @@
 
 extern "C"
 {
+    // Returned from a host function:
+    // panic has type HostFnError
     struct TrampolineResult
     {
         uint64_t result;
         uint8_t panic;
+    };
+
+    // Returned from an invocation
+    // (e.g. in wasmi)
+    // panic has type InvokeError
+    struct FFIInvokeResult {
+      uint64_t result;
+      uint8_t invoke_panic;
     };
 
     struct MemorySlice
