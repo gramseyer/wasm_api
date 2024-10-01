@@ -6,23 +6,6 @@ use crate::wasmtime_context::WasmtimeContext;
 use crate::external_call;
 use crate::invoke_result::{InvokeError, FFIInvokeResult};
 
-// A WasmiRuntime implements a single WebAssembly module,
-// with the ability to invoke exported functions and call
-// in to provided syscalls.
-//
-// Notes:
-// Store has an internal ID, for error checking the internals.
-// A lot of elements inside are indices to buffers within Store,
-// which is obviously broken if the wrong store is used.
-// Wasmi guards against this by giving each Store a unique id,
-// which is derived from an AtomicU32.fetch_add on a static variable.
-// This is fine for our case, as AtomicU32 wraps (does not panic!) on
-// overflow.
-//
-// Store/module/instance store internally an Engine (which is an Arc around
-// the actual EngineInner struct), so it's safe for a WasmiRuntime object
-// to outlive the parent WasmiContext object (although we will probably
-// not take advantage of this)
 pub struct WasmtimeRuntime {
     pub store: Store<*mut c_void>,
     pub instance: Instance,
