@@ -208,6 +208,10 @@ Fizzy_WasmRuntime::initialize(Script const &data)
     return false;
   }
 
+  if (fizzy_module_has_start_function(m_module)) {
+    return false;
+  }
+
   exec_ctx = fizzy_create_metered_execution_context(0, 0);
 
   if (exec_ctx == nullptr) {
