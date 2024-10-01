@@ -149,21 +149,7 @@ impl WasmtimeRuntime {
                     }
                 };
 
-                match my_error.error {
-                    external_call::HostFnError::NONE_OR_RECOVERABLE => { panic!("impossible"); },
-                    external_call::HostFnError::RETURN_SUCCESS => {
-                        return FFIInvokeResult::error(
-                            InvokeError::RETURN);
-                    },
-                    external_call::HostFnError::OUT_OF_GAS => {
-                        return FFIInvokeResult::error(
-                            InvokeError::OUT_OF_GAS_ERROR);
-                    },
-                    external_call::HostFnError::UNRECOVERABLE => {
-                        return FFIInvokeResult::error(
-                            InvokeError::UNRECOVERABLE);
-                    }
-                }
+                return FFIInvokeResult::from_host_error(my_error.error);
             }
         };
     }

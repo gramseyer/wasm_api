@@ -1,3 +1,6 @@
+
+use crate::external_call;
+
 // Everything but UnrecoverableSystemError
 // is a deterministic error that can be handled by a smart
 // contract (i.e. in a try-catch handler).
@@ -29,6 +32,24 @@ impl FFIInvokeResult {
         Self {
             result: res,
             error: InvokeError::NONE as u8,
+        }
+    }
+
+    pub fn from_host_error(err: external_call::HostFnError) -> FFIInvokeResult {
+        match err {
+            external_call::HostFnError::NONE_OR_RECOVERABLE => { panic!("should call success()"); },
+            external_call::HostFnError::RETURN_SUCCESS => {
+                return FFIInvokeResult::error(
+                    InvokeError::RETURN);
+            },
+            external_call::HostFnError::OUT_OF_GAS => {
+                return FFIInvokeResult::error(
+                    InvokeError::OUT_OF_GAS_ERROR);
+            },
+            external_call::HostFnError::UNRECOVERABLE => {
+                return FFIInvokeResult::error(
+                    InvokeError::UNRECOVERABLE);
+            }
         }
     }
 }
