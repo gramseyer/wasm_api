@@ -68,6 +68,29 @@ HostFnStatus<uint64_t> arity5(HostCallContext* ctx, uint64_t arg0, uint64_t arg1
   return 105;
 }
 
+HostFnStatus<uint64_t> arity6(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return 106;
+}
+
+HostFnStatus<uint64_t> arity7(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6 || arg6 != 7) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return 107;
+}
+HostFnStatus<uint64_t> arity8(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6, uint64_t arg7)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6 || arg6 != 7 || arg7 != 8) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return 108;
+}
+
 bool noret_called = false;
 
 HostFnStatus<void> noret_arity0(HostCallContext* ctx) {
@@ -116,6 +139,31 @@ HostFnStatus<void> noret_arity5(HostCallContext* ctx, uint64_t arg0, uint64_t ar
   return {};
 }
 
+HostFnStatus<void> noret_arity6(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+HostFnStatus<void> noret_arity7(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6 || arg6 != 7) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+HostFnStatus<void> noret_arity8(HostCallContext* ctx, uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6, uint64_t arg7)
+{
+  if (arg0 != 1 || arg1 != 2 || arg2 != 3 || arg3 != 4 || arg4 != 5 || arg5 != 6 || arg6 != 7 || arg7 != 8) {
+    throw std::runtime_error("invalid arity check");
+  }
+  return {};
+}
+
+
 
 using namespace test;
 
@@ -135,6 +183,9 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
     ASSERT_TRUE(ctx->link_fn("test", "arg3", &arity3));
     ASSERT_TRUE(ctx->link_fn("test", "arg4", &arity4));
     ASSERT_TRUE(ctx->link_fn("test", "arg5", &arity5));
+    ASSERT_TRUE(ctx->link_fn("test", "arg6", &arity6));
+    ASSERT_TRUE(ctx->link_fn("test", "arg7", &arity7));
+    ASSERT_TRUE(ctx->link_fn("test", "arg8", &arity8));
 
     ASSERT_TRUE(ctx->link_fn("test", "noret_arg0", &noret_arity0));
     ASSERT_TRUE(ctx->link_fn("test", "noret_arg1", &noret_arity1));
@@ -142,7 +193,9 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
     ASSERT_TRUE(ctx->link_fn("test", "noret_arg3", &noret_arity3));
     ASSERT_TRUE(ctx->link_fn("test", "noret_arg4", &noret_arity4));
     ASSERT_TRUE(ctx->link_fn("test", "noret_arg5", &noret_arity5));
-
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg6", &noret_arity6));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg7", &noret_arity7));
+    ASSERT_TRUE(ctx->link_fn("test", "noret_arg8", &noret_arity8));
 
     runtime = ctx->new_runtime_instance(s, nullptr);
 
@@ -195,6 +248,27 @@ TEST_P(InvokeArityTests, arity5)
   EXPECT_EQ(*res.result, 105);
 }
 
+TEST_P(InvokeArityTests, arity6)
+{
+  auto res = runtime->invoke("calltest6");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 106);
+}
+
+TEST_P(InvokeArityTests, arity7)
+{
+  auto res = runtime->invoke("calltest7");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 107);
+}
+
+TEST_P(InvokeArityTests, arity8)
+{
+  auto res = runtime->invoke("calltest8");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 108);
+}
+
 TEST_P(InvokeArityTests, noreturn)
 {
   noret_called = false;
@@ -230,6 +304,24 @@ TEST_P(InvokeArityTests, noret_arg4)
 TEST_P(InvokeArityTests, noret_arg5)
 {
   auto res = runtime->invoke("callnoret5");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg6)
+{
+  auto res = runtime->invoke("callnoret6");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg7)
+{
+  auto res = runtime->invoke("callnoret7");
+  EXPECT_TRUE(!!res.result);
+}
+
+TEST_P(InvokeArityTests, noret_arg8)
+{
+  auto res = runtime->invoke("callnoret8");
   EXPECT_TRUE(!!res.result);
 }
 

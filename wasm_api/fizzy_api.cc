@@ -213,6 +213,87 @@ fizzy_trampoline_5args(void *host_ctx, FizzyInstance *instance,
     fizzy_host_ctx -> errno_);
 }
 
+template<FizzyValueType ret_type>
+FizzyExecutionResult
+fizzy_trampoline_6args(void *host_ctx, FizzyInstance *instance,
+                       const FizzyValue *args,
+                       FizzyExecutionContext *ctx) noexcept
+{
+
+  FizzyTrampolineHostContext *fizzy_host_ctx =
+      reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
+
+
+  TrampolineResult host_fn_result;
+  if constexpr(ret_type == FizzyValueTypeVoid) {
+    host_fn_result 
+        = c_call_6args_noret(fizzy_host_ctx -> fn_pointer,
+        fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64);
+  } else {
+    host_fn_result 
+      = c_call_6args(fizzy_host_ctx -> fn_pointer,
+      fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64);
+  }
+
+  return handle_trampoline_result<ret_type>(host_fn_result,
+    fizzy_host_ctx -> errno_);
+}
+
+
+template<FizzyValueType ret_type>
+FizzyExecutionResult
+fizzy_trampoline_7args(void *host_ctx, FizzyInstance *instance,
+                       const FizzyValue *args,
+                       FizzyExecutionContext *ctx) noexcept
+{
+
+  FizzyTrampolineHostContext *fizzy_host_ctx =
+      reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
+
+
+  TrampolineResult host_fn_result;
+  if constexpr(ret_type == FizzyValueTypeVoid) {
+    host_fn_result 
+        = c_call_7args_noret(fizzy_host_ctx -> fn_pointer,
+        fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64, args[6].i64);
+  } else {
+    host_fn_result 
+      = c_call_7args(fizzy_host_ctx -> fn_pointer,
+      fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64, args[6].i64);
+  }
+
+  return handle_trampoline_result<ret_type>(host_fn_result,
+    fizzy_host_ctx -> errno_);
+}
+
+
+template<FizzyValueType ret_type>
+FizzyExecutionResult
+fizzy_trampoline_8args(void *host_ctx, FizzyInstance *instance,
+                       const FizzyValue *args,
+                       FizzyExecutionContext *ctx) noexcept
+{
+
+  FizzyTrampolineHostContext *fizzy_host_ctx =
+      reinterpret_cast<FizzyTrampolineHostContext *>(host_ctx);
+
+
+  TrampolineResult host_fn_result;
+  if constexpr(ret_type == FizzyValueTypeVoid) {
+    host_fn_result 
+        = c_call_8args_noret(fizzy_host_ctx -> fn_pointer,
+        fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64, args[6].i64, args[7].i64);
+  } else {
+    host_fn_result 
+      = c_call_8args(fizzy_host_ctx -> fn_pointer,
+      fizzy_host_ctx -> real_context, args[0].i64, args[1].i64, args[2].i64, args[3].i64, args[4].i64, args[5].i64, args[6].i64, args[7].i64);
+  }
+
+  return handle_trampoline_result<ret_type>(host_fn_result,
+    fizzy_host_ctx -> errno_);
+}
+
+
 Fizzy_WasmContext::Fizzy_WasmContext(uint32_t max_stack_bytes)
 {}
 Fizzy_WasmContext::~Fizzy_WasmContext()
@@ -364,7 +445,7 @@ Fizzy_WasmRuntime::link_fn_nargs(std::string const& module_name,
     uint8_t nargs,
     WasmValueType ret_type)
 {
-  if (nargs > 5) {
+  if (nargs > 8) {
     //unimplemented
     return false;
   }
@@ -413,6 +494,12 @@ get_trampoline_fn(size_t args, FizzyValueType output)
       return fizzy_trampoline_4args<FizzyValueTypeVoid>;
     case 5:
       return fizzy_trampoline_5args<FizzyValueTypeVoid>;
+    case 6:
+      return fizzy_trampoline_6args<FizzyValueTypeVoid>;
+    case 7:
+      return fizzy_trampoline_7args<FizzyValueTypeVoid>;
+    case 8:
+      return fizzy_trampoline_8args<FizzyValueTypeVoid>;
     default:
       std::terminate();
     }
@@ -430,6 +517,12 @@ get_trampoline_fn(size_t args, FizzyValueType output)
       return fizzy_trampoline_4args<FizzyValueTypeI64>;
     case 5:
       return fizzy_trampoline_5args<FizzyValueTypeI64>;
+    case 6:
+      return fizzy_trampoline_6args<FizzyValueTypeI64>;
+    case 7:
+      return fizzy_trampoline_7args<FizzyValueTypeI64>;
+    case 8:
+      return fizzy_trampoline_8args<FizzyValueTypeI64>;
     default:
       std::terminate();
     }

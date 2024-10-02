@@ -28,6 +28,11 @@ return_success() {
     return TrampolineResult{ 0, static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS) };
 }
 
+TrampolineResult
+deterministic_error() {
+    return TrampolineResult{ 0, static_cast<uint8_t>(wasm_api::HostFnError::DETERMINISTIC_ERROR) };
+}
+
 TrampolineResult handle_result(wasm_api::HostFnStatus<uint64_t> result) {
     if (result) {
         return no_error(*result);
@@ -37,7 +42,10 @@ TrampolineResult handle_result(wasm_api::HostFnStatus<uint64_t> result) {
             return out_of_gas();
         case wasm_api::HostFnError::RETURN_SUCCESS:
             return return_success();
+        case wasm_api::HostFnError::DETERMINISTIC_ERROR:
+            return deterministic_error();
         default:
+            std::printf("unrecoverable error!\n");
             return unrecoverable_error();
     }
 }
@@ -51,7 +59,10 @@ TrampolineResult handle_result(wasm_api::HostFnStatus<void> result) {
             return out_of_gas();
         case wasm_api::HostFnError::RETURN_SUCCESS:
             return return_success();
+        case wasm_api::HostFnError::DETERMINISTIC_ERROR:
+            return deterministic_error();
         default:
+            std::printf("unrecoverable error!\n");
             return unrecoverable_error();
     }
 }
@@ -80,6 +91,7 @@ TrampolineResult call_internal(void* function_pointer,
     }
     catch (...)
     {
+        std::printf("caught exception in call_internal\n");
         return detail::unrecoverable_error();
     }
 }
@@ -140,6 +152,45 @@ extern "C"
         return call_internal<uint64_t>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5);
     }
 
+    TrampolineResult c_call_6args(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6) noexcept
+    {
+        return call_internal<uint64_t>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+    
+    TrampolineResult c_call_7args(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6,
+                                  uint64_t arg7) noexcept
+    {
+        return call_internal<uint64_t>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    TrampolineResult c_call_8args(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6,
+                                  uint64_t arg7,
+                                  uint64_t arg8) noexcept
+    {
+        return call_internal<uint64_t>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
     TrampolineResult c_call_0args_noret(void* function_pointer,
                                   void* host_call_context) noexcept
     {
@@ -189,5 +240,44 @@ extern "C"
                                   uint64_t arg5) noexcept
     {
         return call_internal<void>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    TrampolineResult c_call_6args_noret(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6) noexcept
+    {
+        return call_internal<void>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    TrampolineResult c_call_7args_noret(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6,
+                                  uint64_t arg7) noexcept
+    {
+        return call_internal<void>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    TrampolineResult c_call_8args_noret(void* function_pointer,
+                                  void* host_call_context,
+                                  uint64_t arg1,
+                                  uint64_t arg2,
+                                  uint64_t arg3,
+                                  uint64_t arg4,
+                                  uint64_t arg5,
+                                  uint64_t arg6,
+                                  uint64_t arg7,
+                                  uint64_t arg8) noexcept
+    {
+        return call_internal<void>(function_pointer, host_call_context, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
     }
 }

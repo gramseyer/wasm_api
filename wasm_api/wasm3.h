@@ -174,6 +174,12 @@ wrap_fn_return(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type me
         result = c_call_4args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args));
     } else if constexpr (nargs == 5) {
         result = c_call_5args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args));
+    } else if constexpr (nargs == 6) {
+        result = c_call_6args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args));
+    } else if constexpr (nargs == 7) {
+        result = c_call_7args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args), std::get<6>(args));
+    } else if constexpr (nargs == 8) {
+        result = c_call_8args(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args), std::get<6>(args), std::get<7>(args));
     } else {
         std::terminate();
     }
@@ -221,6 +227,12 @@ wrap_fn_noreturn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type 
         result = c_call_4args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args));
     } else if constexpr (nargs == 5) {
         result = c_call_5args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args));
+    } else if constexpr (nargs == 6) {
+        result = c_call_6args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args));
+    } else if constexpr (nargs == 7) {
+        result = c_call_7args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args), std::get<6>(args));
+    } else if constexpr (nargs == 8) {
+        result = c_call_8args_noret(fn_pointer, m3_GetUserData(rt), std::get<0>(args), std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args), std::get<6>(args), std::get<7>(args));
     } else {
         std::terminate();
     }
@@ -240,186 +252,6 @@ wrap_fn_noreturn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type 
     }
 }
 
-static const void *
-wrap_fn_0args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t = std::tuple<>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result = c_call_0args(fn_pointer, m3_GetUserData(rt));
-  
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-    std::terminate();  // asserting that m3ApiReturn macro actually returns
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
-static const void *
-wrap_fn_1args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t = std::tuple<uint64_t>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result = c_call_1args(fn_pointer, m3_GetUserData(rt), std::get<0>(args));
-
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
-
-static const void *
-wrap_fn_2args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t = std::tuple<uint64_t, uint64_t>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result = c_call_2args(fn_pointer, m3_GetUserData(rt), std::get<0>(args),
-                             std::get<1>(args));
-
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
-
-static const void *
-wrap_fn_3args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t = std::tuple<uint64_t, uint64_t, uint64_t>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result = c_call_3args(fn_pointer, m3_GetUserData(rt), std::get<0>(args),
-                             std::get<1>(args), std::get<2>(args));
-
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
-
-static const void *
-wrap_fn_4args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t = std::tuple<uint64_t, uint64_t, uint64_t, uint64_t>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result =
-      c_call_4args(fn_pointer, m3_GetUserData(rt), std::get<0>(args),
-                   std::get<1>(args), std::get<2>(args), std::get<3>(args));
-
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
-
-static const void *
-wrap_fn_5args(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp,
-              mem_type mem)
-{
-  m3ApiReturnType(uint64_t);
-
-  using args_tuple_t =
-      std::tuple<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
-  args_tuple_t args;
-
-  get_args_from_stack(_sp, mem, args);
-
-  void *fn_pointer = _ctx->userdata;
-
-  auto result = c_call_5args(fn_pointer, m3_GetUserData(rt), std::get<0>(args),
-                             std::get<1>(args), std::get<2>(args),
-                                 std::get<3>(args), std::get<4>(args));
-
-  switch (result.panic) {
-  case static_cast<uint8_t>(wasm_api::HostFnError::NONE_OR_RECOVERABLE):
-    m3ApiReturn(result.result);
-  case static_cast<uint8_t>(wasm_api::HostFnError::UNRECOVERABLE):
-    m3ApiTrap(m3Err_unrecoverableSystemError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::OUT_OF_GAS):
-    m3ApiTrap(m3Err_outOfGasError);
-  case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
-    m3ApiTrap(m3Err_returnSuccessError);
-  default:
-    throw std::runtime_error("impossible");
-  }
-}
 
 static void
 throw_nondeterministic_errors(M3Result result) {
@@ -486,6 +318,15 @@ static_link_nargs(IM3Module io_module, const char *const i_moduleName,
       case 5:
         wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
         break;
+      case 6:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 7:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 8:
+        wrapped_fn_pointer = &detail::wrap_fn_return<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
       default:
         return false;
       }
@@ -510,7 +351,17 @@ static_link_nargs(IM3Module io_module, const char *const i_moduleName,
       case 5:
         wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
         break;
+      case 6:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 7:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
+      case 8:
+        wrapped_fn_pointer = &detail::wrap_fn_noreturn<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>;
+        break;
       default:
+        std::printf("invalid void nargs %u\n", nargs);
         return false;
       }
     break;
@@ -523,8 +374,7 @@ static_link_nargs(IM3Module io_module, const char *const i_moduleName,
   M3Result result =
       m3_LinkRawFunctionEx(io_module, i_moduleName, i_functionName,
                            cur_sig.c_str(), wrapped_fn_pointer, function);
-
-  return (result == m3Err_none);
+  return (result == m3Err_none || result == m3Err_functionLookupFailed);
 }
 
 class module;

@@ -42,6 +42,10 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 
     auto module = env.parse_module(contract.data, contract.len);
 
+    if (!module) {
+        return nullptr;
+    }
+
     auto runtime
         = env.new_runtime(MAX_STACK_BYTES, out->get_host_call_context());
 

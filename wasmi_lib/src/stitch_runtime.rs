@@ -199,6 +199,69 @@ impl Stitch_WasmRuntime {
         self.linker.define(import_name, fn_name, func);
     }
 
+    pub fn link_function_6args(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64| -> u64 {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_6args(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6)
+                };
+                stitch_handle_trampoline_error(&res);
+                return res.result;
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
+
+    pub fn link_function_7args(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64, arg7: u64| -> u64 {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_7args(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+                };
+                stitch_handle_trampoline_error(&res);
+                return res.result;
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
+
+    pub fn link_function_8args(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64, arg7: u64, arg8: u64| -> u64 {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_8args(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+                };
+                stitch_handle_trampoline_error(&res);
+                return res.result;
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
+
     pub fn link_function_0args_noret(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
     {
         let x = AnnoyingBorrowBypass {
@@ -324,6 +387,66 @@ impl Stitch_WasmRuntime {
 
         self.linker.define(import_name, fn_name, func);
     }
+
+    pub fn link_function_6args_noret(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64| -> () {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_6args_noret(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6)
+                };
+                stitch_handle_trampoline_error(&res);
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
+
+    pub fn link_function_7args_noret(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64, arg7: u64| -> () {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_7args_noret(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+                };
+                stitch_handle_trampoline_error(&res);
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
+
+    pub fn link_function_8args_noret(&mut self, fn_pointer : *mut c_void, import_name : &str, fn_name : &str)
+    {
+        let x = AnnoyingBorrowBypass {
+            fn_pointer : fn_pointer.clone(),
+            userctx : self.userctx.clone(),
+        };
+
+
+        let func =
+            Func::wrap(&mut self.store, move |arg1: u64, arg2 : u64, arg3:u64, arg4 : u64, arg5: u64, arg6: u64, arg7: u64, arg8: u64| -> () {
+                let _y = x.clone();
+                let res = unsafe {
+                    external_call::c_call_8args_noret(x.fn_pointer, x.userctx, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+                };
+                stitch_handle_trampoline_error(&res);
+            });
+
+        self.linker.define(import_name, fn_name, func);
+    }
 }
 
 #[no_mangle]
@@ -355,30 +478,39 @@ pub extern "C" fn stitch_link_nargs(
     let r = unsafe {&mut *runtime};
 
     match ret_type_enum {
-    	WasmValueType::U64 => {
-		    match nargs {
-		        0 => {r.link_function_0args(function_pointer, &module, &method); },
-		        1 => {r.link_function_1args(function_pointer, &module, &method); },
-		        2 => {r.link_function_2args(function_pointer, &module, &method); },
-		        3 => {r.link_function_3args(function_pointer, &module, &method); },
-		        4 => {r.link_function_4args(function_pointer, &module, &method); },
-		        5 => {r.link_function_5args(function_pointer, &module, &method); },
-		        _ => {return false; },
-		    }
-		},
-		WasmValueType::VOID => {
-		    match nargs {
-		        0 => {r.link_function_0args_noret(function_pointer, &module, &method); },
-		        1 => {r.link_function_1args_noret(function_pointer, &module, &method); },
-		        2 => {r.link_function_2args_noret(function_pointer, &module, &method); },
-		        3 => {r.link_function_3args_noret(function_pointer, &module, &method); },
-		        4 => {r.link_function_4args_noret(function_pointer, &module, &method); },
-		        5 => {r.link_function_5args_noret(function_pointer, &module, &method); },
-		        _ => {return false; },
-		    }
-		},
-		_ => {return false;},
-	}
+        WasmValueType::U64 => {
+            match nargs {
+                0 => r.link_function_0args(function_pointer, &module, &method),
+                1 => r.link_function_1args(function_pointer, &module, &method),
+                2 => r.link_function_2args(function_pointer, &module, &method),
+                3 => r.link_function_3args(function_pointer, &module, &method),
+                4 => r.link_function_4args(function_pointer, &module, &method),
+                5 => r.link_function_5args(function_pointer, &module, &method),
+                6 => r.link_function_6args(function_pointer, &module, &method),
+                7 => r.link_function_7args(function_pointer, &module, &method),
+                8 => r.link_function_8args(function_pointer, &module, &method),
+                _ => {
+                    return false;
+                }
+            }
+        },
+        WasmValueType::VOID => {
+            match nargs {
+                0 => r.link_function_0args_noret(function_pointer, &module, &method),
+                1 => r.link_function_1args_noret(function_pointer, &module, &method),
+                2 => r.link_function_2args_noret(function_pointer, &module, &method),
+                3 => r.link_function_3args_noret(function_pointer, &module, &method),
+                4 => r.link_function_4args_noret(function_pointer, &module, &method),
+                5 => r.link_function_5args_noret(function_pointer, &module, &method),
+                6 => r.link_function_6args_noret(function_pointer, &module, &method),
+                7 => r.link_function_7args_noret(function_pointer, &module, &method),
+                8 => r.link_function_8args_noret(function_pointer, &module, &method),
+                _ => {
+                    return false;
+                }
+            }
+        },
+    };
     return true;
 }
 

@@ -59,4 +59,45 @@ INSTANTIATE_TEST_SUITE_P(AllEngines, MissingImportedFnTests,
                           wasm_api::SupportedWasmEngine::FIZZY,
                           wasm_api::SupportedWasmEngine::WASMTIME));
 
+HostFnStatus<uint64_t> import_fn(HostCallContext*, uint64_t arg) {
+  return 2*arg;
+}
+
+class UnnecessaryImportedFnTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine> {
+
+ protected:
+  void SetUp() override {
+    auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
+
+    Script s {.data = c->data(), .len = c->size()};
+
+    ctx = std::make_unique<WasmContext>(65536, GetParam());
+
+    ASSERT_TRUE(ctx -> link_fn("test", "redir_call", &import_fn));
+
+    ASSERT_TRUE(ctx -> link_fn("test", "nexist", &import_fn));
+
+    runtime = ctx->new_runtime_instance(s, nullptr);
+
+    ASSERT_TRUE(!!runtime);
+  }
+
+  std::unique_ptr<WasmContext> ctx;
+  std::unique_ptr<WasmRuntime> runtime;
+}; 
+
+TEST_P(UnnecessaryImportedFnTests, unnecessary_import_success)
+{
+  auto res = runtime->invoke("calltest");
+  ASSERT_TRUE(!!res.result);
+  EXPECT_EQ(*res.result, 24);
+}
+
+INSTANTIATE_TEST_SUITE_P(AllEngines, UnnecessaryImportedFnTests,
+                        ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
+                          wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
+                          wasm_api::SupportedWasmEngine::WASMI,
+                          wasm_api::SupportedWasmEngine::FIZZY,
+                          wasm_api::SupportedWasmEngine::WASMTIME));
+
 } /* wasm_api */
