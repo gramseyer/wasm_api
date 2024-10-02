@@ -344,6 +344,8 @@ Fizzy_WasmRuntime::invoke(std::string const &method_name)
       return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::UNRECOVERABLE};
     case HostFnError::RETURN_SUCCESS:
       return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::RETURN};
+    case HostFnError::DETERMINISTIC_ERROR:
+      return InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR};
     }
     throw std::runtime_error("unreachable");
   }

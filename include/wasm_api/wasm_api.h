@@ -47,12 +47,12 @@ struct HostCallContext {
   void *user_ctx = nullptr;
 };
 
-namespace detail {
-
 struct MeteredReturn {
   InvokeStatus<uint64_t> result;
   uint64_t gas_consumed;
 };
+
+namespace detail {
 
 template<typename T>
 struct WasmValueTypeLookup;
@@ -207,7 +207,7 @@ public:
    * In most use-cases, caller should then deduct (return_value).gas_consumed
    * from some other gas limit.
    **/
-  detail::MeteredReturn invoke(std::string const &method_name,
+  MeteredReturn invoke(std::string const &method_name,
                                uint64_t gas_limit = UINT64_MAX);
 
   bool link_fn(detail::DefaultLinkEntry const& entry)

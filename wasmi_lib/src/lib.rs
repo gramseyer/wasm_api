@@ -7,6 +7,8 @@ pub mod invoke_result;
 pub mod wasmi_runtime;
 pub mod wasmtime_runtime;
 pub mod memory;
+pub mod stitch_context;
+pub mod stitch_runtime;
 mod common;
 
 use crate::wasmi_runtime::WasmiRuntime;

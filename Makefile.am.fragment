@@ -2,7 +2,6 @@
 
 wasm_api_CFLAGS = -I %reldir%/include
 wasm_api_LIBS = \
-	%reldir%/stitch_lib/target/release/libstitch_lib.a \
 	%reldir%/wasmi_lib/target/release/libwasmi_lib.a \
 	%reldir%/fizzy/build/lib/libfizzy.a 
 
@@ -60,10 +59,6 @@ WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_no_start.wat
 
 wasm_api_TEST_WASMS = $(WASM_API_TEST_WATS:.wat=.wasm)
-
-%reldir%/stitch_lib/target/release/libstitch_lib.a : %reldir%/stitch_lib/src/*.rs
-	cd %reldir%/stitch_lib &&\
-	cargo build --release --package stitch_lib
 
 %reldir%/wasmi_lib/target/release/libwasmi_lib.a : %reldir%/wasmi_lib/src/*.rs
 	cd %reldir%/wasmi_lib &&\

@@ -72,7 +72,6 @@ bool noret_called = false;
 
 HostFnStatus<void> noret_arity0(HostCallContext* ctx) {
   noret_called = true;
-  std::printf("called noret_arity0\n");
   return {};
 }
 

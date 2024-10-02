@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 wasmi = "0.36.0"
 wasmtime = {version = "25.0.1", features = ["runtime", "cranelift"] }
+makepad-stitch = "0.1.0"
 
 [lib]
 crate-type = ["staticlib", "rlib"]

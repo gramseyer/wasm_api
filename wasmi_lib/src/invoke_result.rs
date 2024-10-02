@@ -49,7 +49,11 @@ impl FFIInvokeResult {
             external_call::HostFnError::UNRECOVERABLE => {
                 return FFIInvokeResult::error(
                     InvokeError::UNRECOVERABLE);
-            }
+            },
+            external_call::HostFnError::DETERMINISTIC_ERROR => {
+                return FFIInvokeResult::error(
+                    InvokeError::DETERMINISTIC_ERROR);
+            },
         }
     }
 }

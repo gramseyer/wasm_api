@@ -31,9 +31,10 @@ use core::fmt;
 #[derive(Clone,Copy,Debug)]
 pub enum HostFnError {
     NONE_OR_RECOVERABLE = 0,
-    RETURN_SUCCESS = 1, // technically "success", but terminates the caller wasm instance
+    DETERMINISTIC_ERROR = 1, // usable instead of returning an error code to caller
     OUT_OF_GAS = 2,
-    UNRECOVERABLE = 3
+    UNRECOVERABLE = 3,
+    RETURN_SUCCESS = 4, // technically "success", but terminates the caller wasm instance
 }
 
 #[repr(C)]

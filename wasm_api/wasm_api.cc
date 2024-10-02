@@ -140,7 +140,7 @@ WasmRuntime::get_memory() const
     return std::span<const std::byte>();
 }
 
-detail::MeteredReturn 
+MeteredReturn 
 WasmRuntime::invoke(std::string const& method_name,
                                 uint64_t gas_limit)
 {
@@ -154,16 +154,16 @@ WasmRuntime::invoke(std::string const& method_name,
     uint64_t gas_remaining = impl -> get_available_gas();
 
     if (gas_limit < gas_remaining) {
-        return detail::MeteredReturn {
+        return MeteredReturn {
             .result = InvokeStatus<uint64_t>{std::unexpect_t{}, InvokeError::UNRECOVERABLE},
             .gas_consumed = 0
         };
     }
     impl -> set_available_gas(gas_backup);
 
-    return {
-        res,
-        gas_limit - gas_remaining
+    return MeteredReturn {
+        .result = res,
+        .gas_consumed = gas_limit - gas_remaining
     };
 }
 

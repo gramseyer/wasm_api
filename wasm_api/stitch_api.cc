@@ -4,29 +4,12 @@
 
 #include "wasm_api/ffi_trampolines.h"
 
-enum class StitchInvokeError : uint32_t
-{
-    None = 0,
-    StitchError = 1,
-    FuncNExist = 2,
-    InputError = 3, // input validation fails
-    ReturnTypeError = 4,
-    WasmError = 5,
-    UnrecoverableSystemError = 6
-};
-
-struct StitchInvokeResult
-{
-    uint64_t result;
-    uint32_t error;
-};
-
 extern "C"
 {
 
     MemorySlice stitch_get_memory(void* runtime_pointer);
 
-    StitchInvokeResult stitch_invoke(void* runtime_pointer,
+    FFIInvokeResult stitch_invoke(void* runtime_pointer,
                                      const uint8_t* method_bytes,
                                      const uint32_t method_len);
 
@@ -109,29 +92,13 @@ Stitch_WasmRuntime::invoke(std::string const& method_name)
         = ::stitch_invoke(runtime_pointer,
                           reinterpret_cast<const uint8_t*>(method_name.c_str()),
                           static_cast<uint32_t>(method_name.size()));
-    switch (StitchInvokeError(invoke_res.error))
-    {
-        case StitchInvokeError::None:
-            return invoke_res.result;
-        case StitchInvokeError::StitchError:
-            /**
-             * Occurs when the module fails to instantiate.
-             * As far as I can tell skimming the code, this is deterministic
-             * (i.e. lots of wasm validation checks), with the possibility of a panic
-             * occuring for nondeterministic errors (i.e. module.rs: line 159,
-             * unreachable() occurs if a wasm section has an unknown number,
-             * instead of returning an error).
-             */
-        case StitchInvokeError::InputError:
-        case StitchInvokeError::FuncNExist:
-        case StitchInvokeError::ReturnTypeError:
-        case StitchInvokeError::WasmError:
-            return InvokeStatus<uint64_t>(std::unexpect_t{}, InvokeError::DETERMINISTIC_ERROR);
-        case StitchInvokeError::UnrecoverableSystemError:
-            return InvokeStatus<uint64_t>(std::unexpect_t{}, InvokeError::UNRECOVERABLE);
+
+    InvokeError err = static_cast<InvokeError>(invoke_res.invoke_panic);
+    if (err == InvokeError::NONE) {
+        return invoke_res.result;
     }
 
-    throw std::runtime_error("impossible");
+    return InvokeStatus<uint64_t>(std::unexpect_t{}, err);
 }
 
 bool 
@@ -141,10 +108,6 @@ Stitch_WasmRuntime::link_fn_nargs(std::string const& module_name,
     uint8_t nargs, 
     WasmValueType ret_type) 
 {
-    if (ret_type != WasmValueType::U64) {
-        return false;
-        // unimpl;
-    }
     return stitch_link_nargs(
         runtime_pointer,
         (const uint8_t*)module_name.c_str(),
