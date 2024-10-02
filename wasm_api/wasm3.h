@@ -194,8 +194,10 @@ wrap_fn_return(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type me
         m3ApiTrap(m3Err_outOfGasError);
       case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
         m3ApiTrap(m3Err_returnSuccessError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::DETERMINISTIC_ERROR):
+        m3ApiTrap(m3Err_trapHostEnvError);
       default:
-        throw std::runtime_error("impossible");
+        throw std::runtime_error("unexpected TrampolineResult panic");
     }
 }
 
@@ -247,8 +249,10 @@ wrap_fn_noreturn(IM3Runtime rt, IM3ImportContext _ctx, stack_type _sp, mem_type 
         m3ApiTrap(m3Err_outOfGasError);
       case static_cast<uint8_t>(wasm_api::HostFnError::RETURN_SUCCESS):
         m3ApiTrap(m3Err_returnSuccessError);
+      case static_cast<uint8_t>(wasm_api::HostFnError::DETERMINISTIC_ERROR):
+        m3ApiTrap(m3Err_trapHostEnvError);
       default:
-        throw std::runtime_error("impossible");
+        throw std::runtime_error("unexpected TrampolineResult panic");
     }
 }
 
