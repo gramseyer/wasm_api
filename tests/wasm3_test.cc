@@ -103,7 +103,7 @@ TEST(wasm3, set_memory)
 
 	ASSERT_TRUE(load16.has_value());
 
-	expect_res_eq(load16->call(7LLU), 0x9012);
+	expect_res_eq(load16->call(UINT64_C(7)), 0x9012);
 
 	auto mem = r->get_memory();
 
