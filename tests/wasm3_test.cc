@@ -21,6 +21,7 @@
 #include "tests/load_wasm.h"
 
 #include <cstring>
+#include <cstdint>
 
 using namespace wasm_api;
 
@@ -51,10 +52,7 @@ TEST(wasm3, call)
 
 	ASSERT_TRUE(f.has_value());
 
-	EXPECT_EQ(f->call(15LLU, 20LLU), 35);
-
-//	int32_t res = f.template call<int32_t>(15, 20);
-//	EXPECT_EQ(res, 35);
+	EXPECT_EQ(f->call(UINT64_C(15), UINT64_C(20)), 35);
 }
 
 
@@ -82,15 +80,15 @@ TEST(wasm3, set_memory)
 
 	auto store = r->find_function("store");
 
-	EXPECT_TRUE(!!store->call(0LLU, 0x12345678'12345678LLU));
+	EXPECT_TRUE(!!store->call(UINT64_C(0), UINT64_C(0x12345678'12345678)));
 
-	EXPECT_TRUE(!!store->call(8LLU, 0xABCDEF90'ABCDEF90LLU));
+	EXPECT_TRUE(!!store->call(UINT64_C(8), UINT64_C(0xABCDEF90'ABCDEF90)));
 
 	auto load = r->find_function("load");
 
 	ASSERT_TRUE(load.has_value());
 
-	auto mem0 = load->call(0LLU);
+	auto mem0 = load->call(UINT64_C(0));
 
 	expect_res_eq(mem0, 0x12345678'12345678);
 
@@ -98,8 +96,8 @@ TEST(wasm3, set_memory)
 
 	ASSERT_TRUE(load8.has_value());
 
-	expect_res_eq(load8->call(0LLU), 0x78);
-	expect_res_eq(load8->call(1LLU), 0x56);
+	expect_res_eq(load8->call(UINT64_C(0)), 0x78);
+	expect_res_eq(load8->call(UINT64_C(1)), 0x56);
 
 	auto load16 = r->find_function("load16");
 
