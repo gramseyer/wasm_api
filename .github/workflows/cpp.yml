@@ -15,14 +15,12 @@ jobs:
     - uses: actions/checkout@v4
       with: 
         submodules: "recursive"
-     - name: set gcc-14 default
+    - name: set gcc-14 default
       run: sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14 && sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
     - name: install packages
       run: sudo apt-get install -y git gcc-14 autoconf libtool pkg-config wabt libgtest-dev
     - name: gcc version check
       run : gcc --version
-    - name: install catch2
-      run: git clone https://github.com/catchorg/Catch2.git && cd Catch2 && cmake -Bbuild -H. -DBUILD_TESTING=OFF && sudo cmake --build build/ --target install -j
     - name: autogen
       run: ./autogen.sh
     - name: configure
