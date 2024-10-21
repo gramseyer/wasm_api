@@ -91,7 +91,6 @@ TrampolineResult call_internal(void* function_pointer,
     }
     catch (...)
     {
-        std::printf("caught exception in call_internal\n");
         return detail::unrecoverable_error();
     }
 }
