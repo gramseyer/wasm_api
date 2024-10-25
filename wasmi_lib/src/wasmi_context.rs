@@ -434,7 +434,7 @@ impl WasmiContext {
                   arg1: u64|
                   -> Result<(), wasmi::Error> {
                 let res = unsafe {
-                    external_call::c_call_1args(
+                    external_call::c_call_1args_noret(
                         x.clone().fn_pointer,
                         caller.data().clone(),
                         arg1,
