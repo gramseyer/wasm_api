@@ -158,6 +158,8 @@ enum class SupportedWasmEngine {
   WASMTIME = 4,
 };
 
+std::string engine_to_string(SupportedWasmEngine engine);
+
 class WasmContext {
 public:
   WasmContext(const uint32_t MAX_STACK_BYTES,

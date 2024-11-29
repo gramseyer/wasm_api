@@ -25,9 +25,27 @@
 #include <string.h>
 
 #include <cinttypes>
+#include <cstring>
 
 namespace wasm_api
 {
+
+std::string engine_to_string(SupportedWasmEngine engine)
+{
+	switch(engine) {
+		case SupportedWasmEngine::WASM3:
+			return "wasm3";
+		case SupportedWasmEngine::MAKEPAD_STITCH:
+			return "makepad_stitch";
+		case SupportedWasmEngine::WASMI:
+			return "wasmi";
+		case SupportedWasmEngine::FIZZY:
+			return "fizzy";
+		case SupportedWasmEngine::WASMTIME:
+			return "wasmtime";
+	}
+	throw std::runtime_error("unknown engine");
+}
 
 WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                          SupportedWasmEngine engine)

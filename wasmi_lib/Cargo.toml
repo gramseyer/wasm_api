@@ -4,9 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wasmi = "0.36.0"
-wasmtime = {version = "25.0.1", features = ["runtime", "cranelift"] }
+wasmi = "0.40.0"
+wasmtime = {version = "27", features = ["runtime", "cranelift"] }
 makepad-stitch = "0.1.0"
 
 [lib]
 crate-type = ["staticlib", "rlib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = '...'  # Platform-specific.
+strip = "symbols"
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
