@@ -69,7 +69,6 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
 {
     if (impl) {
         if (!impl -> init_success()) {
-            delete impl;
             impl = nullptr;
         }
     }
@@ -90,15 +89,6 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
         return nullptr;
     }
     return pre_link;
-}
-
-WasmContext::~WasmContext()
-{
-    if (impl)
-    {
-        delete impl;
-    }
-    impl = nullptr;
 }
 
 namespace detail {

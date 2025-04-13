@@ -168,8 +168,6 @@ public:
   std::unique_ptr<WasmRuntime> new_runtime_instance(Script const &script,
                                                     void *ctxp = nullptr);
 
-  ~WasmContext();
-
   template<typename ret_type, std::same_as<uint64_t>... Args>
   bool link_fn(std::string const& module_name, std::string const& fn_name,
                HostFnStatus<ret_type> (*f)(HostCallContext *, Args...))
@@ -183,12 +181,7 @@ public:
   }
 
 private:
-  detail::WasmContextImpl *impl;
-
-  WasmContext(const WasmContext &) = delete;
-  WasmContext(WasmContext &&) = delete;
-  WasmContext &operator=(const WasmContext &) = delete;
-  WasmContext &operator=(WasmContext &&) = delete;
+  std::shared_ptr<detail::WasmContextImpl> impl;
 
   template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };

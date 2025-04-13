@@ -48,6 +48,7 @@ SOFTWARE.
 
 #include <algorithm>
 #include <cassert>
+#include <exception>
 #include <iostream>
 #include <iterator>
 #include <memory>
