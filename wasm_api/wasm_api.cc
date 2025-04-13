@@ -81,6 +81,7 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     {
         return nullptr;
     }
+    std::lock_guard lock(mtx);
     if (!impl) {
         return nullptr;
     }

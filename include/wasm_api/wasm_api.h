@@ -160,6 +160,11 @@ enum class SupportedWasmEngine {
 
 std::string engine_to_string(SupportedWasmEngine engine);
 
+// Any context that can be safely shared between multiple runtimes.
+// This is a wrapper around a shared_ptr, so can be copied/moved/etc.
+// 
+// Note to self: If you care about determinism (i.e. if used in groundhog),
+// then nothing within a WasmContext implementation can affect a WasmRuntime's operation.
 class WasmContext {
 public:
   WasmContext(const uint32_t MAX_STACK_BYTES,
@@ -175,6 +180,7 @@ public:
     if (!impl) {
         return false;
     }
+    std::lock_guard lock(mtx);
     return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
                          (kArgCount<Args>() + ... + 0),
                          detail::WasmValueTypeLookup<ret_type>::VAL);
@@ -182,6 +188,7 @@ public:
 
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
+  std::mutex mtx;
 
   template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };
