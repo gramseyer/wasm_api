@@ -155,7 +155,8 @@ enum class SupportedWasmEngine {
   MAKEPAD_STITCH = 1,
   WASMI = 2,
   FIZZY = 3,
-  WASMTIME = 4,
+  WASMTIME_CRANELIFT = 4,
+  WASMTIME_WINCH = 5,
 };
 
 std::string engine_to_string(SupportedWasmEngine engine);
@@ -186,6 +187,8 @@ public:
                          detail::WasmValueTypeLookup<ret_type>::VAL);
   }
 
+  ~WasmContext() = default;
+  
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
   std::mutex mtx;

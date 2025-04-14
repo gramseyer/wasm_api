@@ -35,8 +35,9 @@ class ReturnFnTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEng
  protected:
   void SetUp() override {
     contract = load_wasm_from_file("tests/wat/test_return.wasm");
+    uint32_t len = contract->size();
 
-    script = Script{.data = contract->data(), .len = contract->size()};
+    script = Script{.data = contract->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -73,9 +74,10 @@ TEST_P(ReturnFnTests, check_userctx_correct)
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, ReturnFnTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
-                          wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                          wasm_api::SupportedWasmEngine::WASMI,
-                          wasm_api::SupportedWasmEngine::FIZZY,
-                          wasm_api::SupportedWasmEngine::WASMTIME));
+                            wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
+                            wasm_api::SupportedWasmEngine::WASMI,
+                            wasm_api::SupportedWasmEngine::FIZZY,
+                            wasm_api::SupportedWasmEngine::WASMTIME_CRANELIFT,
+                            wasm_api::SupportedWasmEngine::WASMTIME_WINCH));
 
 } /* wasm_api */

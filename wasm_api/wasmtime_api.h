@@ -12,7 +12,7 @@ class Wasmtime_WasmRuntime;
 class Wasmtime_WasmContext : public detail::WasmContextImpl
 {
 public:
-    Wasmtime_WasmContext(uint32_t max_stack_bytes);
+    Wasmtime_WasmContext(uint32_t max_stack_bytes, bool is_cranelift);
 
     ~Wasmtime_WasmContext();
 

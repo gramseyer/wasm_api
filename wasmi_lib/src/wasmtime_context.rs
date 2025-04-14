@@ -31,12 +31,28 @@ fn wasmtime_handle_trampoline_error_noret(result: TrampolineResult) -> Result<()
 }
 
 impl WasmtimeContext {
-    fn new() -> Option<Self> {
+    fn new_cranelift() -> Option<Self> {
         let engine = Engine::new(
             &Config::default()
                 .consume_fuel(true)
                 .wasm_backtrace(false)
                 .strategy(wasmtime::Strategy::Cranelift)
+                .cranelift_opt_level(wasmtime::OptLevel::Speed)
+                .cranelift_nan_canonicalization(true) // deterministic nan
+        ).ok()?;
+
+        Some(Self {
+            engine: engine.clone(),
+            linker: Linker::new(&engine),
+        })
+    }
+
+    fn new_winch() -> Option<Self> {
+        let engine = Engine::new(
+            &Config::default()
+                .consume_fuel(true)
+                .wasm_backtrace(false)
+                .strategy(wasmtime::Strategy::Winch)
                 .cranelift_opt_level(wasmtime::OptLevel::Speed)
                 .cranelift_nan_canonicalization(true) // deterministic nan
         ).ok()?;
@@ -795,9 +811,20 @@ pub extern "C" fn wasmtime_link_nargs(
 
 // Rust FFI needs no_mangle and extern "C"
 #[no_mangle]
-pub extern "C" fn new_wasmtime_context() -> *mut c_void {
+pub extern "C" fn new_wasmtime_context_cranelift() -> *mut c_void {
     
-    let b = match WasmtimeContext::new() {
+    let b = match WasmtimeContext::new_cranelift() {
+        Some(x) => {Box::new(x)},
+        None => { return core::ptr::null_mut(); },
+    };
+
+    return unsafe { core::mem::transmute(Box::into_raw(b)) };
+}
+
+#[no_mangle]
+pub extern "C" fn new_wasmtime_context_winch() -> *mut c_void {
+    
+    let b = match WasmtimeContext::new_winch() {
         Some(x) => {Box::new(x)},
         None => { return core::ptr::null_mut(); },
     };

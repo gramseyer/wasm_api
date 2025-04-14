@@ -54,10 +54,11 @@ TEST_P(MissingImportedFnTests, missing_import_fail)
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, MissingImportedFnTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
-                          wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                          wasm_api::SupportedWasmEngine::WASMI,
-                          wasm_api::SupportedWasmEngine::FIZZY,
-                          wasm_api::SupportedWasmEngine::WASMTIME));
+                            wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
+                            wasm_api::SupportedWasmEngine::WASMI,
+                            wasm_api::SupportedWasmEngine::FIZZY,
+                            wasm_api::SupportedWasmEngine::WASMTIME_CRANELIFT,
+                            wasm_api::SupportedWasmEngine::WASMTIME_WINCH));
 
 HostFnStatus<uint64_t> import_fn(HostCallContext*, uint64_t arg) {
   return 2*arg;
@@ -95,9 +96,10 @@ TEST_P(UnnecessaryImportedFnTests, unnecessary_import_success)
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, UnnecessaryImportedFnTests,
                         ::testing::Values(wasm_api::SupportedWasmEngine::WASM3, 
-                          wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
-                          wasm_api::SupportedWasmEngine::WASMI,
-                          wasm_api::SupportedWasmEngine::FIZZY,
-                          wasm_api::SupportedWasmEngine::WASMTIME));
+                            wasm_api::SupportedWasmEngine::MAKEPAD_STITCH,
+                            wasm_api::SupportedWasmEngine::WASMI,
+                            wasm_api::SupportedWasmEngine::FIZZY,
+                            wasm_api::SupportedWasmEngine::WASMTIME_CRANELIFT,
+                            wasm_api::SupportedWasmEngine::WASMTIME_WINCH));
 
 } /* wasm_api */

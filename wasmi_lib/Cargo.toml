@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 wasmi = "0.40.0"
-wasmtime = {version = "27", features = ["runtime", "cranelift"] }
+wasmtime = {version = "31", features = ["runtime", "cranelift", "winch"] }
 makepad-stitch = "0.1.0"
 
 [lib]

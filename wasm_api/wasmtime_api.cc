@@ -32,7 +32,9 @@ extern "C"
                           uint8_t nargs,
                           uint8_t ret_type);
 
-    wasm_api::WasmtimeContextPtr new_wasmtime_context(uint32_t max_stack_bytes);
+    wasm_api::WasmtimeContextPtr new_wasmtime_context_cranelift(uint32_t max_stack_bytes);
+    wasm_api::WasmtimeContextPtr new_wasmtime_context_winch(uint32_t max_stack_bytes);
+
     void free_wasmtime_context(wasm_api::WasmtimeContextPtr context_pointer);
 
     void* new_wasmtime_runtime(const uint8_t* data,
@@ -46,8 +48,13 @@ extern "C"
 namespace wasm_api
 {
 
-Wasmtime_WasmContext::Wasmtime_WasmContext(uint32_t max_stack_bytes)
-    : context_pointer(new_wasmtime_context(max_stack_bytes))
+Wasmtime_WasmContext::Wasmtime_WasmContext(uint32_t max_stack_bytes, bool is_cranelift)
+    : context_pointer([=] () {
+        if (is_cranelift) {
+            return new_wasmtime_context_cranelift(max_stack_bytes);
+        }
+        return new_wasmtime_context_winch(max_stack_bytes);
+    }())
 {}
 
 Wasmtime_WasmContext::~Wasmtime_WasmContext()

@@ -41,8 +41,10 @@ std::string engine_to_string(SupportedWasmEngine engine)
 			return "wasmi";
 		case SupportedWasmEngine::FIZZY:
 			return "fizzy";
-		case SupportedWasmEngine::WASMTIME:
-			return "wasmtime";
+		case SupportedWasmEngine::WASMTIME_CRANELIFT:
+			return "wasmtime cranelift";
+        case SupportedWasmEngine::WASMTIME_WINCH:
+            return "wasmtime winch";
 	}
 	throw std::runtime_error("unknown engine");
 }
@@ -60,8 +62,10 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                 return new Wasmi_WasmContext(MAX_STACK_BYTES);
             case SupportedWasmEngine::FIZZY:
                 return new Fizzy_WasmContext(MAX_STACK_BYTES);
-            case SupportedWasmEngine::WASMTIME:
-                return new Wasmtime_WasmContext(MAX_STACK_BYTES);
+            case SupportedWasmEngine::WASMTIME_CRANELIFT:
+                return new Wasmtime_WasmContext(MAX_STACK_BYTES, true);
+            case SupportedWasmEngine::WASMTIME_WINCH:
+                return new Wasmtime_WasmContext(MAX_STACK_BYTES, false);
             default:
                 return nullptr;
         }
