@@ -817,7 +817,6 @@ pub extern "C" fn new_wasmtime_context_cranelift() -> *mut c_void {
         Some(x) => {Box::new(x)},
         None => { return core::ptr::null_mut(); },
     };
-
     return unsafe { core::mem::transmute(Box::into_raw(b)) };
 }
 
@@ -828,7 +827,6 @@ pub extern "C" fn new_wasmtime_context_winch() -> *mut c_void {
         Some(x) => {Box::new(x)},
         None => { return core::ptr::null_mut(); },
     };
-
     return unsafe { core::mem::transmute(Box::into_raw(b)) };
 }
 

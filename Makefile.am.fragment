@@ -45,9 +45,14 @@ wasm_api_TEST_SRCS = \
 	%reldir%/tests/return_test.cc \
 	%reldir%/tests/no_start_test.cc
 
+%reldir%/wasm_api/bindings.h: %reldir%/wasmi_lib/target/release/libwasmi_lib.a %reldir%/wasmi_lib/cbindgen.toml
+	cd %reldir%/wasmi_lib &&\
+	cbindgen --config cbindgen.toml --crate wasmi_lib --output ../wasm_api/bindings.h
+
 $(WASM3_SRCS:.c=.o): CFLAGS += -Wno-extern-initializer
 $(wasm_api_SRCS:.cc=.o): CXXFLAGS += -I %reldir%/. -I %reldir%/fizzy/build/include/
 $(wasm_api_TEST_SRCS:.cc=.o) : CXXFLAGS += -I %reldir%/.  -I %reldir%/fizzy/build/include/
+$(wasm_api_SRCS:.cc=.o): %reldir%/wasm_api/bindings.h
 
 WASM_API_TEST_WATS = \
 	%reldir%/tests/wat/test_call_simple.wat \

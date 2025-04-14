@@ -12,20 +12,6 @@ extern "C"
         uint8_t panic;
     };
 
-    // Returned from an invocation
-    // (e.g. in wasmi)
-    // panic has type InvokeError
-    struct FFIInvokeResult {
-      uint64_t result;
-      uint8_t invoke_panic;
-    };
-
-    struct MemorySlice
-    {
-        uint8_t* mem;
-        uint32_t size;
-    };
-
     // trampolines
     TrampolineResult c_call_0args(void* function_pointer,
                                   void* host_call_context) noexcept;

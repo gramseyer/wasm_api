@@ -74,3 +74,6 @@ test-suite.log
 
 #mac nonsense
 *.dSYM
+
+#generated files
+wasm_api/bindings.h

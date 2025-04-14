@@ -2,48 +2,10 @@
 
 #include <utility>
 
-#include "wasm_api/ffi_trampolines.h"
+#include "wasm_api/bindings.h"
 
 #include <cinttypes>
 #include <cassert>
-
-extern "C"
-{
-
-    MemorySlice wasmtime_get_memory(void* runtime_pointer);
-
-    FFIInvokeResult wasmtime_invoke(void* runtime_pointer,
-                                   const uint8_t* method_bytes,
-                                   const uint32_t method_len);
-
-    // return true if out of gas -- i.e. should shortcircuit rest of host
-    // function
-    bool wasmtime_consume_gas(void* runtime_pointer, uint64_t gas_to_consume);
-
-    uint64_t wasmtime_get_available_gas(const void* runtime_pointer);
-    void wasmtime_set_available_gas(void* runtime_pointer, uint64_t gas);
-
-    bool wasmtime_link_nargs(wasm_api::WasmtimeContextPtr context_pointer,
-                          const uint8_t* module_bytes,
-                          const uint32_t module_bytes_len,
-                          const uint8_t* method_bytes,
-                          const uint32_t method_bytes_len,
-                          void* fn_pointer,
-                          uint8_t nargs,
-                          uint8_t ret_type);
-
-    wasm_api::WasmtimeContextPtr new_wasmtime_context_cranelift(uint32_t max_stack_bytes);
-    wasm_api::WasmtimeContextPtr new_wasmtime_context_winch(uint32_t max_stack_bytes);
-
-    void free_wasmtime_context(wasm_api::WasmtimeContextPtr context_pointer);
-
-    void* new_wasmtime_runtime(const uint8_t* data,
-                            uint32_t size,
-                            void* userctx,
-                            wasm_api::WasmtimeContextPtr context_pointer);
-
-    void free_wasmtime_runtime(void* wasmtime_runtime);
-}
 
 namespace wasm_api
 {
@@ -51,9 +13,9 @@ namespace wasm_api
 Wasmtime_WasmContext::Wasmtime_WasmContext(uint32_t max_stack_bytes, bool is_cranelift)
     : context_pointer([=] () {
         if (is_cranelift) {
-            return new_wasmtime_context_cranelift(max_stack_bytes);
+            return new_wasmtime_context_cranelift();
         }
-        return new_wasmtime_context_winch(max_stack_bytes);
+        return new_wasmtime_context_winch();
     }())
 {}
 
@@ -97,13 +59,13 @@ std::span<std::byte>
 Wasmtime_WasmRuntime::get_memory()
 {
     auto slice = ::wasmtime_get_memory(runtime_pointer);
-    return std::span(reinterpret_cast<std::byte*>(slice.mem), slice.size);
+    return std::span(reinterpret_cast<std::byte*>(slice.mem), slice.sz);
 }
 std::span<const std::byte>
 Wasmtime_WasmRuntime::get_memory() const
 {
     auto slice = ::wasmtime_get_memory(runtime_pointer);
-    return std::span(reinterpret_cast<const std::byte*>(slice.mem), slice.size);
+    return std::span(reinterpret_cast<const std::byte*>(slice.mem), slice.sz);
 }
 
 bool 
@@ -133,7 +95,7 @@ Wasmtime_WasmRuntime::invoke(std::string const &method_name)
                           static_cast<uint32_t>(method_name.size()));
 
 
-    InvokeError err = static_cast<InvokeError>(invoke_res.invoke_panic);
+    InvokeError err = static_cast<InvokeError>(invoke_res.error);
     if (err == InvokeError::NONE) {
         return invoke_res.result;
     }

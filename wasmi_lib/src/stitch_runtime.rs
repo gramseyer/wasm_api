@@ -451,7 +451,7 @@ impl Stitch_WasmRuntime {
 
 #[no_mangle]
 pub extern "C" fn stitch_link_nargs(
-    runtime : *mut Stitch_WasmRuntime, 
+    runtime_void: *mut c_void, 
     module_name: *const u8, 
     module_name_len : u32,
     method_name : *const u8,
@@ -460,6 +460,9 @@ pub extern "C" fn stitch_link_nargs(
     nargs : u8,
     ret_type: u8) -> bool
 {
+    assert!(runtime_void != core::ptr::null_mut());
+    let runtime : *mut Stitch_WasmRuntime= unsafe { core::mem::transmute(runtime_void)};
+
     let module = match string_from_parts(module_name, module_name_len) {
         Ok(x) => x,
         _ => {return false;}
@@ -515,7 +518,7 @@ pub extern "C" fn stitch_link_nargs(
 }
 
 #[no_mangle]
-pub fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context_void : *mut c_void, userctx : *mut c_void) -> *mut c_void
+pub extern "C" fn new_stitch_runtime(bytes: *const u8, bytes_len : u32, context_void : *mut c_void, userctx : *mut c_void) -> *mut c_void
 {
 	assert!(context_void != core::ptr::null_mut());
 

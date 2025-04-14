@@ -2,34 +2,7 @@
 
 #include <utility>
 
-#include "wasm_api/ffi_trampolines.h"
-
-extern "C"
-{
-
-    MemorySlice stitch_get_memory(void* runtime_pointer);
-
-    FFIInvokeResult stitch_invoke(void* runtime_pointer,
-                                     const uint8_t* method_bytes,
-                                     const uint32_t method_len);
-
-    bool stitch_link_nargs(void* runtime_pointer,
-                           const uint8_t* module_bytes,
-                           const uint32_t module_bytes_len,
-                           const uint8_t* method_bytes,
-                           const uint32_t method_bytes_len,
-                           void* fn_pointer,
-                           uint8_t nargs,
-                           uint8_t ret_type);
-
-    void* new_stitch_context();
-    void free_stitch_context(void* stitch_context);
-    void* new_stitch_runtime(const uint8_t* data,
-                             uint32_t size,
-                             void* stitch_context,
-                             void* userctx);
-    void free_stitch_runtime(void* stitch_runtime);
-}
+#include "wasm_api/bindings.h"
 
 namespace wasm_api
 {
@@ -76,13 +49,13 @@ std::span<std::byte>
 Stitch_WasmRuntime::get_memory()
 {
     auto slice = ::stitch_get_memory(runtime_pointer);
-    return { reinterpret_cast<std::byte*>(slice.mem), slice.size};
+    return { reinterpret_cast<std::byte*>(slice.mem), slice.sz};
 }
 std::span<const std::byte>
 Stitch_WasmRuntime::get_memory() const
 {
     auto slice = ::stitch_get_memory(runtime_pointer);
-    return { reinterpret_cast<const std::byte*>(slice.mem), slice.size};
+    return { reinterpret_cast<const std::byte*>(slice.mem), slice.sz};
 }
 
 InvokeStatus<uint64_t>
@@ -93,7 +66,7 @@ Stitch_WasmRuntime::invoke(std::string const& method_name)
                           reinterpret_cast<const uint8_t*>(method_name.c_str()),
                           static_cast<uint32_t>(method_name.size()));
 
-    InvokeError err = static_cast<InvokeError>(invoke_res.invoke_panic);
+    InvokeError err = static_cast<InvokeError>(invoke_res.error);
     if (err == InvokeError::NONE) {
         return invoke_res.result;
     }

@@ -2,52 +2,16 @@
 
 #include <utility>
 
-#include "wasm_api/ffi_trampolines.h"
+#include "wasm_api/bindings.h"
 
 #include <cinttypes>
 #include <cassert>
-
-extern "C"
-{
-
-    MemorySlice wasmi_get_memory(void* runtime_pointer);
-
-    FFIInvokeResult wasmi_invoke(void* runtime_pointer,
-                                   const uint8_t* method_bytes,
-                                   const uint32_t method_len);
-
-    // return true if out of gas -- i.e. should shortcircuit rest of host
-    // function
-    bool wasmi_consume_gas(void* runtime_pointer, uint64_t gas_to_consume);
-
-    uint64_t wasmi_get_available_gas(const void* runtime_pointer);
-    void wasmi_set_available_gas(void* runtime_pointer, uint64_t gas);
-
-    bool wasmi_link_nargs(wasm_api::WasmiContextPtr,
-                          const uint8_t* module_bytes,
-                          const uint32_t module_bytes_len,
-                          const uint8_t* method_bytes,
-                          const uint32_t method_bytes_len,
-                          void* fn_pointer,
-                          uint8_t nargs,
-                          uint8_t ret_type);
-
-    wasm_api::WasmiContextPtr new_wasmi_context(uint32_t max_stack_bytes);
-    void free_wasmi_context(wasm_api::WasmiContextPtr wasmi_context);
-
-    void* new_wasmi_runtime(const uint8_t* data,
-                            uint32_t size,
-                            void* userctx,
-                            wasm_api::WasmiContextPtr wasmi_context);
-
-    void free_wasmi_runtime(void* wasmi_runtime);
-}
 
 namespace wasm_api
 {
 
 Wasmi_WasmContext::Wasmi_WasmContext(uint32_t max_stack_bytes)
-    : context_pointer(new_wasmi_context(max_stack_bytes))
+    : context_pointer(new_wasmi_context())
 {}
 
 Wasmi_WasmContext::~Wasmi_WasmContext()
@@ -90,13 +54,13 @@ std::span<std::byte>
 Wasmi_WasmRuntime::get_memory()
 {
     auto slice = ::wasmi_get_memory(runtime_pointer);
-    return std::span(reinterpret_cast<std::byte*>(slice.mem), slice.size);
+    return std::span(reinterpret_cast<std::byte*>(slice.mem), slice.sz);
 }
 std::span<const std::byte>
 Wasmi_WasmRuntime::get_memory() const
 {
     auto slice = ::wasmi_get_memory(runtime_pointer);
-    return std::span(reinterpret_cast<const std::byte*>(slice.mem), slice.size);
+    return std::span(reinterpret_cast<const std::byte*>(slice.mem), slice.sz);
 }
 
 bool 
@@ -125,7 +89,7 @@ Wasmi_WasmRuntime::invoke(std::string const &method_name)
                           static_cast<uint32_t>(method_name.size()));
 
 
-    InvokeError err = static_cast<InvokeError>(invoke_res.invoke_panic);
+    InvokeError err = static_cast<InvokeError>(invoke_res.error);
     if (err == InvokeError::NONE) {
         return invoke_res.result;
     }
