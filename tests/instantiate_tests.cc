@@ -30,8 +30,9 @@ class MissingImportedFnTests : public ::testing::TestWithParam<wasm_api::Support
  protected:
   void SetUp() override {
     auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
+    uint32_t len = c->size();
 
-    Script s {.data = c->data(), .len = c->size()};
+    Script s {.data = c->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -69,8 +70,9 @@ class UnnecessaryImportedFnTests : public ::testing::TestWithParam<wasm_api::Sup
  protected:
   void SetUp() override {
     auto c = load_wasm_from_file("tests/wat/test_invoke.wasm");
+    uint32_t len = c->size();
 
-    Script s {.data = c->data(), .len = c->size()};
+    Script s {.data = c->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -91,7 +93,7 @@ TEST_P(UnnecessaryImportedFnTests, unnecessary_import_success)
 {
   auto res = runtime->invoke("calltest");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 24);
+  EXPECT_EQ(*res.result, 24u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, UnnecessaryImportedFnTests,

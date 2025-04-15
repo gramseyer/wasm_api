@@ -172,8 +172,9 @@ class InvokeArityTests : public ::testing::TestWithParam<wasm_api::SupportedWasm
  protected:
   void SetUp() override {
     auto c = load_wasm_from_file("tests/wat/test_invoke_arity.wasm");
+    uint32_t len = c->size();
 
-    Script s {.data = c->data(), .len = c->size()};
+    Script s {.data = c->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -210,63 +211,63 @@ TEST_P(InvokeArityTests, arity0)
 {
   auto res = runtime->invoke("calltest0");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 100);
+  EXPECT_EQ(*res.result, 100u);
 }
 
 TEST_P(InvokeArityTests, arity1)
 {
   auto res = runtime->invoke("calltest1");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 101);
+  EXPECT_EQ(*res.result, 101u);
 }
 
 TEST_P(InvokeArityTests, arity2)
 {
   auto res = runtime->invoke("calltest2");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 102);
+  EXPECT_EQ(*res.result, 102u);
 }
 
 TEST_P(InvokeArityTests, arity3)
 {
   auto res = runtime->invoke("calltest3");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 103);
+  EXPECT_EQ(*res.result, 103u);
 }
 
 TEST_P(InvokeArityTests, arity4)
 {
   auto res = runtime->invoke("calltest4");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 104);
+  EXPECT_EQ(*res.result, 104u);
 }
 
 TEST_P(InvokeArityTests, arity5)
 {
   auto res = runtime->invoke("calltest5");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 105);
+  EXPECT_EQ(*res.result, 105u);
 }
 
 TEST_P(InvokeArityTests, arity6)
 {
   auto res = runtime->invoke("calltest6");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 106);
+  EXPECT_EQ(*res.result, 106u);
 }
 
 TEST_P(InvokeArityTests, arity7)
 {
   auto res = runtime->invoke("calltest7");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 107);
+  EXPECT_EQ(*res.result, 107u);
 }
 
 TEST_P(InvokeArityTests, arity8)
 {
   auto res = runtime->invoke("calltest8");
   ASSERT_TRUE(!!res.result);
-  EXPECT_EQ(*res.result, 108);
+  EXPECT_EQ(*res.result, 108u);
 }
 
 TEST_P(InvokeArityTests, noreturn)
