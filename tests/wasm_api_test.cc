@@ -83,8 +83,9 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
  protected:
   void SetUp() override {
     contract = load_wasm_from_file("tests/wat/test_error_handling.wasm");
+    uint32_t len = contract->size();
 
-    script =  Script {.data = contract->data(), .len = contract->size()};
+    script =  Script {.data = contract->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -206,7 +207,7 @@ TEST_P(ExternalCallTest, reentrance)
     auto res = runtime->invoke("call1");
     ASSERT_TRUE(!!res.result);
     // gracefully handle error in subcall, here meaning return 1
-    EXPECT_EQ(*res.result, 1);
+    EXPECT_EQ(*res.result, 1u);
     EXPECT_TRUE(reentrance_hit);
 }
 
@@ -221,7 +222,7 @@ TEST_P(ExternalCallTest, nonzero_return)
     auto res = runtime->invoke("call1");
     ASSERT_TRUE(!!res.result);
     // gracefully handle error in subcall, here meaning return 1
-    EXPECT_EQ(*res.result, 100);
+    EXPECT_EQ(*res.result, 100u);
 }
 
 

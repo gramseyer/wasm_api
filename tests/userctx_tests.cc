@@ -40,8 +40,9 @@ class UserCtxTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEngi
  protected:
   void SetUp() override {
     contract = load_wasm_from_file("tests/wat/test_invoke.wasm");
+    uint32_t len = contract->size();
 
-    script = Script{.data = contract->data(), .len = contract->size()};
+    script = Script{.data = contract->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 

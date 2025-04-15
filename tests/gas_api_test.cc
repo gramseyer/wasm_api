@@ -33,8 +33,9 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
   void SetUp() override {
     // this wasm just invokes an external call.  I'm sort of abusing it here.
     contract = load_wasm_from_file("tests/wat/test_error_handling.wasm");
+    uint32_t len = contract->size();
 
-    script = Script{.data = contract->data(), .len = contract->size()};
+    script = Script{.data = contract->data(), .len = len};
 
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
@@ -64,17 +65,17 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
 
 TEST_P(GasApiTest, set_get_noinvoke)
 {
-    EXPECT_EQ(runtime -> get_available_gas(), 0);
+    EXPECT_EQ(runtime -> get_available_gas(), 0u);
 
     runtime -> set_available_gas(100);
 
     EXPECT_TRUE(runtime -> consume_gas(60));
 
-    EXPECT_EQ(runtime -> get_available_gas(), 40);
+    EXPECT_EQ(runtime -> get_available_gas(), 40u);
 
     EXPECT_FALSE(runtime -> consume_gas(50));
 
-    EXPECT_EQ(runtime -> get_available_gas(), 0);
+    EXPECT_EQ(runtime -> get_available_gas(), 0u);
 }
 
 TEST_P(GasApiTest, invoke_resets_gas)
@@ -85,9 +86,9 @@ TEST_P(GasApiTest, invoke_resets_gas)
 
     ASSERT_TRUE(!!res.result);
 
-    EXPECT_GE(res.gas_consumed, 100);
+    EXPECT_GE(res.gas_consumed, 100u);
 
-    EXPECT_EQ(runtime->get_available_gas(), 5000);
+    EXPECT_EQ(runtime->get_available_gas(), 5000u);
 
     EXPECT_TRUE(runtime -> consume_gas(res.gas_consumed));
 
@@ -96,7 +97,7 @@ TEST_P(GasApiTest, invoke_resets_gas)
     res = runtime -> invoke("call1", 80);
     ASSERT_FALSE(!!res.result);
     EXPECT_EQ(res.result.error(), InvokeError::OUT_OF_GAS_ERROR);
-    EXPECT_EQ(res.gas_consumed, 80);
+    EXPECT_EQ(res.gas_consumed, 80u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, GasApiTest,

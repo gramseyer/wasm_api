@@ -99,7 +99,10 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 namespace detail {
 bool 
 WasmContextImpl::finish_link(std::unique_ptr<WasmRuntime>& pre_link)
-{ 
+{
+    if (!pre_link) {
+        return false;
+    }
     for (auto const& entry : link_entries)
     {
         if (!pre_link -> link_fn(entry))
