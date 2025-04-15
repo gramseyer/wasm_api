@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 #include <span>
@@ -188,7 +189,7 @@ public:
   }
 
   ~WasmContext() = default;
-  
+
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
   std::mutex mtx;

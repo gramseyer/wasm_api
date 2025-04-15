@@ -62,7 +62,7 @@ public:
         uint8_t nargs,
         WasmValueType ret_type) override;
 
-    InvokeStatus<uint64_t> invoke(std::string const &method_name);
+    InvokeStatus<uint64_t> invoke(std::string const &method_name) override;
 
     bool
     __attribute__((warn_unused_result))

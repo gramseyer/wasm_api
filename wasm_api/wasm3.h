@@ -67,7 +67,7 @@ SOFTWARE.
 
 namespace wasm_api {
 
-class HostCallContext;
+struct HostCallContext;
 
 }
 

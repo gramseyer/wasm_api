@@ -17,7 +17,7 @@ public:
     ~Wasmtime_WasmContext();
 
     std::unique_ptr<WasmRuntime> new_runtime_instance(Script const& contract,
-                                                      void* ctxp);
+                                                      void* ctxp) override;
 
     // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64_t repeated nargs)
     bool link_fn_nargs(std::string const& module_name,
@@ -26,7 +26,7 @@ public:
         uint8_t nargs,
         WasmValueType ret_type) override;
 
-    bool finish_link(std::unique_ptr<WasmRuntime>& pre_link) {return true;}
+    bool finish_link(std::unique_ptr<WasmRuntime>& pre_link) override {return true;}
 
     bool init_success() override { return context_pointer != nullptr; }
 
@@ -52,7 +52,7 @@ public:
         return false;
     }
 
-    InvokeStatus<uint64_t> invoke(std::string const &method_name);
+    InvokeStatus<uint64_t> invoke(std::string const &method_name) override;
 
     bool 
     __attribute__((warn_unused_result))

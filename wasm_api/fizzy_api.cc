@@ -6,6 +6,7 @@
 #include <fizzy/fizzy.h>
 
 #include <utility>
+#include <exception>
 
 namespace wasm_api {
 
@@ -34,7 +35,7 @@ handle_trampoline_result(TrampolineResult result, HostFnError* ctx_errno)
       return FizzyExecutionResult {
         .trapped = false,
         .has_value = false,
-        .value = 0
+        .value = {0},
       };
     } else if constexpr (ret_type == FizzyValueTypeI64) {
       FizzyValue out;
@@ -51,7 +52,7 @@ handle_trampoline_result(TrampolineResult result, HostFnError* ctx_errno)
     return FizzyExecutionResult {
       .trapped = true,
       .has_value = false,
-      .value = 0
+      .value = {0}
     };
   }
 }

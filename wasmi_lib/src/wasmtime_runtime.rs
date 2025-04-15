@@ -82,7 +82,8 @@ impl WasmtimeRuntime {
     ) -> Option<WasmtimeRuntime> {
         let module = match Module::new(&context.engine, &bytes) {
             Ok(m) => m,
-            Err(_) => {
+            Err(x) => {
+                println!("Error: {}", x);
                 return None;
             }
         };

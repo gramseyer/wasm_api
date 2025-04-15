@@ -60,9 +60,9 @@ public:
     std::string const& fn_name,
     void* fn,
     uint8_t nargs,
-    WasmValueType ret_type);
+    WasmValueType ret_type) override;
 
-  InvokeStatus<uint64_t> invoke(std::string const &method_name);
+  InvokeStatus<uint64_t> invoke(std::string const &method_name) override;
 
   bool __attribute__((warn_unused_result)) consume_gas(uint64_t gas) override;
   uint64_t get_available_gas() const override;

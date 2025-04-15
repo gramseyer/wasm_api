@@ -26,6 +26,7 @@
 
 #include <cinttypes>
 #include <cstring>
+#include <mutex>
 
 namespace wasm_api
 {
