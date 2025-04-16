@@ -19,6 +19,8 @@ jobs:
       run: sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14 && sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
     - name: install packages
       run: sudo apt-get install -y git gcc-14 autoconf libtool pkg-config wabt libgtest-dev
+    - name: install cbindgen
+      run: cargo install --force cbindgen
     - name: gcc version check
       run : gcc --version
     - name: autogen
