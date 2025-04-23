@@ -22,11 +22,13 @@
 #include "wasm_api/fizzy_api.h"
 #include "wasm_api/wasmtime_api.h"
 
+#include <stdexcept>
 #include <string.h>
 
 #include <cinttypes>
 #include <cstring>
 #include <mutex>
+#include <variant>
 
 namespace wasm_api
 {
@@ -48,6 +50,16 @@ std::string engine_to_string(SupportedWasmEngine engine)
             return "wasmtime winch";
 	}
 	throw std::runtime_error("unknown engine");
+}
+
+std::string engine_to_string(std::variant<SupportedWasmEngine, WasmContext> engine) {
+    if (std::holds_alternative<SupportedWasmEngine>(engine)) {
+        return engine_to_string(std::get<SupportedWasmEngine>(engine));
+    }
+    if (std::holds_alternative<WasmContext>(engine)) {
+        return std::get<WasmContext>(engine).engine() + "_SHARED_CONTEXT";
+    }
+    throw std::runtime_error("bad variant");
 }
 
 WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,

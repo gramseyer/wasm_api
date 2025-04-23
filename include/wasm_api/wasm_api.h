@@ -160,7 +160,10 @@ enum class SupportedWasmEngine {
   WASMTIME_WINCH = 5,
 };
 
+class WasmContext;
+
 std::string engine_to_string(SupportedWasmEngine engine);
+std::string engine_to_string(std::variant<SupportedWasmEngine, WasmContext> engine);
 
 // Any context that can be safely shared between multiple runtimes.
 // This is a wrapper around a shared_ptr, so can be copied/moved/etc.
@@ -188,11 +191,17 @@ public:
                          detail::WasmValueTypeLookup<ret_type>::VAL);
   }
 
+  std::string engine() const {
+    return engine_to_string(engine_type);
+  }
+
   ~WasmContext() = default;
 
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
   std::shared_ptr<std::mutex> mtx;
+
+  SupportedWasmEngine engine_type;
 
   template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };
