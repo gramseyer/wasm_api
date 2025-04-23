@@ -71,6 +71,7 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                 return nullptr;
         }
     }())
+    , mtx(std::make_shared<std::mutex>())
 {
     if (impl) {
         if (!impl -> init_success()) {
@@ -86,7 +87,7 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     {
         return nullptr;
     }
-    std::lock_guard lock(mtx);
+    std::lock_guard lock(*mtx);
     if (!impl) {
         return nullptr;
     }

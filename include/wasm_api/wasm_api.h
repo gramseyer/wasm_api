@@ -182,7 +182,7 @@ public:
     if (!impl) {
         return false;
     }
-    std::lock_guard lock(mtx);
+    std::lock_guard lock(*mtx);
     return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
                          (kArgCount<Args>() + ... + 0),
                          detail::WasmValueTypeLookup<ret_type>::VAL);
@@ -192,7 +192,7 @@ public:
 
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
-  std::mutex mtx;
+  std::shared_ptr<std::mutex> mtx;
 
   template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };

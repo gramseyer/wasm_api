@@ -52,7 +52,7 @@ TEST_P(NoStartTest, set_get_noinvoke)
         ASSERT_TRUE(mem.size() > 8);
 
         uint64_t first_bytes = *reinterpret_cast<uint64_t*>(mem.data());
-        EXPECT_EQ(first_bytes, 0);
+        EXPECT_EQ(first_bytes, 0u);
     }
 }
 

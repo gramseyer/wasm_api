@@ -76,7 +76,7 @@ TEST(wasm3, set_memory)
 
 	auto sz_res = sz->call();
 	ASSERT_TRUE(!!sz_res);
-	EXPECT_EQ(*sz_res, 1);
+	EXPECT_EQ(*sz_res, 1u);
 
 	auto store = r->find_function("store");
 
@@ -107,7 +107,7 @@ TEST(wasm3, set_memory)
 
 	auto mem = r->get_memory();
 
-	EXPECT_TRUE(mem.size() == 65536);
+	EXPECT_TRUE(mem.size() == 65536u);
 
 	uint64_t buf[2];
 	buf[0] = 0x12345678'12345678;
