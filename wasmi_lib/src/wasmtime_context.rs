@@ -40,19 +40,21 @@ fn wasmtime_handle_trampoline_error_noret(result: TrampolineResult) -> Result<()
 impl WasmtimeContext {
     fn new_cranelift() -> Option<Self> {
         let mut pool = PoolingAllocationConfig::default();
-        let wasm_page_size = 64 * 1024;
-        let max_tasks = 14_000;
-       // let memory_pages = 0x19_800_000 / wasm_page_size;
-        //pool.memory_pages(memory_pages);
-        pool.total_memories(max_tasks);
-        pool.total_core_instances(max_tasks);
-        pool.total_stacks(max_tasks);
-        pool.total_tables(max_tasks);
+        pool.max_unused_warm_slots(1000);
+        pool.total_memories(1000);
+        pool.max_memory_size(1024 * 256);
+        pool.total_tables(1000);
+        pool.table_elements(50000);
+        pool.total_core_instances(1000);
+        pool.table_keep_resident(1024 * 256);
+        pool.linear_memory_keep_resident(1024 * 256);
         let strategy = InstanceAllocationStrategy::Pooling(pool);
 
         let engine = Engine::new(
             &Config::default()
                 .allocation_strategy(strategy)
+                .memory_init_cow(false)
+                .memory_guard_size(0)
                 .consume_fuel(true)
                 .wasm_backtrace(false)
                 .strategy(wasmtime::Strategy::Cranelift)
