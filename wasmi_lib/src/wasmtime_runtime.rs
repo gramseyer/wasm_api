@@ -5,6 +5,7 @@ use wasmtime::{Instance, Module, Store, Val};
 use crate::wasmtime_context::{WasmtimeContext, CacheKey};
 use crate::external_call;
 use crate::invoke_result::{InvokeError, FFIInvokeResult};
+use std::sync::Arc;
 
 pub struct WasmtimeRuntime {
     pub store: Store<*mut c_void>,
@@ -83,8 +84,8 @@ impl WasmtimeRuntime {
     ) -> Option<WasmtimeRuntime> {
 
         if let Some(key) = &script_id {
-            let mut cache = context.instance_pre_cache.lock().unwrap();
-            if let Some(inst_pre) = cache.get(key) {
+            //let mut cache = context.instance_pre_cache.lock().unwrap();
+            if let Some(inst_pre) = context.get_inst_pre(key) {
                 let mut store = Store::new(&context.engine, userctx);
                 let instance = inst_pre.instantiate(&mut store).ok()?;
                 return Some(Self {
@@ -106,7 +107,7 @@ impl WasmtimeRuntime {
 
         if let Some(key) = &script_id {
             let mut cache = context.instance_pre_cache.lock().unwrap();
-            cache.put(*key, instance_pre.clone());
+            cache.put(*key, Arc::new(instance_pre.clone()));
         }
 
         let mut store = Store::new(&context.engine, userctx);
