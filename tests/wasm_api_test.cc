@@ -225,6 +225,27 @@ TEST_P(ExternalCallTest, nonzero_return)
     EXPECT_EQ(*res.result, 100u);
 }
 
+TEST_P(ExternalCallTest, ModuleCacheSanityCheck) {
+    ASSERT_TRUE(ctx->link_fn("test", "external_call", &nonzero_return));
+    Hash h{}; // doesn't matter what the hash actually is
+    h[10] = 20;
+    h[20] = 30;
+    runtime = ctx -> new_runtime_instance(script, nullptr, &h);
+    ASSERT_TRUE(runtime);
+    ERROR_GUARD
+
+    // invoke once
+    auto res = runtime->invoke("call1");
+    ASSERT_TRUE(!!res.result);
+    EXPECT_EQ(*res.result, 100u);
+
+    runtime = ctx -> new_runtime_instance(script, nullptr, &h);
+    ASSERT_TRUE(runtime);
+    res = runtime->invoke("call1");
+    ASSERT_TRUE(!!res.result);
+    EXPECT_EQ(*res.result, 100u);
+}
+
 
 TEST_P(ExternalCallTest, null_handling)
 {
