@@ -301,7 +301,7 @@ Fizzy_WasmContext::~Fizzy_WasmContext()
 {}
 
 std::unique_ptr<WasmRuntime>
-Fizzy_WasmContext::new_runtime_instance(Script const &contract, void *ctxp)
+Fizzy_WasmContext::new_runtime_instance(Script const &contract, void *ctxp, const Hash* /*unused*/)
 {
   std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 

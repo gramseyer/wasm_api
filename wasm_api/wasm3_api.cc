@@ -29,7 +29,7 @@ Wasm3_WasmRuntime::Wasm3_WasmRuntime(std::unique_ptr<wasm3::runtime> r,
 {}
 
 std::unique_ptr<WasmRuntime>
-Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
+Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp, const Hash* /*unuseds*/)
 {
     if (contract.data == nullptr)
     {

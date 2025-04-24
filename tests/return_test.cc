@@ -42,7 +42,7 @@ class ReturnFnTests : public ::testing::TestWithParam<wasm_api::SupportedWasmEng
     ctx = std::make_unique<WasmContext>(65536, GetParam());
 
     ASSERT_TRUE(ctx->link_fn("test", "return_fn", &return_function));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
 
     ASSERT_TRUE(!!runtime);
   }

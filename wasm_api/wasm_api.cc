@@ -92,7 +92,7 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
 }
 
 std::unique_ptr<WasmRuntime>
-WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
+WasmContext::new_runtime_instance(Script const& contract, void* ctxp, const Hash* script_identifier)
 {
     if (contract.data == nullptr)
     {
@@ -101,7 +101,7 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     if (!impl) {
         return nullptr;
     }
-    auto pre_link = impl->new_runtime_instance(contract, ctxp);
+    auto pre_link = impl->new_runtime_instance(contract, ctxp, script_identifier);
     if (!impl -> finish_link(pre_link)) {
         return nullptr;
     }

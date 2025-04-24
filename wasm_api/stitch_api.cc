@@ -29,7 +29,7 @@ Stitch_WasmRuntime::~Stitch_WasmRuntime()
 }
 
 std::unique_ptr<WasmRuntime>
-Stitch_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
+Stitch_WasmContext::new_runtime_instance(Script const& contract, void* ctxp, const Hash* /*unused*/)
 {
     std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 

@@ -42,7 +42,7 @@ TEST_P(NoStartTest, set_get_noinvoke)
 {
     START_GUARD
 
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     // expected behavior:
     // Either instantiation fails (no start allowed) or start() is not run
 

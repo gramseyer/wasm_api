@@ -79,8 +79,9 @@ struct DefaultLinkEntry {
 class WasmRuntimeImpl;
 class WasmContextImpl {
 public:
+
   virtual std::unique_ptr<WasmRuntime>
-  new_runtime_instance(Script const &contract, void *ctxp) = 0;
+  new_runtime_instance(Script const &contract, void *ctxp, const Hash* script_identifier) = 0;
 
   virtual ~WasmContextImpl() {}
 
@@ -106,7 +107,7 @@ public:
 
 protected:
   WasmContextImpl() = default;
-  
+
   std::mutex link_entry_mutex;
 
 private:
@@ -178,7 +179,8 @@ public:
               SupportedWasmEngine engine = SupportedWasmEngine::WASM3);
 
   std::unique_ptr<WasmRuntime> new_runtime_instance(Script const &script,
-                                                    void *ctxp = nullptr);
+                                                    void *ctxp,
+                                                    const Hash* script_identifier = nullptr);
 
   template<typename ret_type, std::same_as<uint64_t>... Args>
   bool link_fn(std::string const& module_name, std::string const& fn_name,

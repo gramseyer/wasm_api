@@ -17,7 +17,7 @@ public:
     ~Wasmtime_WasmContext();
 
     std::unique_ptr<WasmRuntime> new_runtime_instance(Script const& contract,
-                                                      void* ctxp) override;
+                                                      void* ctxp, const Hash* script_identifier) override;
 
     // expected signature: HostFnStatus<uint64_t>(HostCallContext*, uint64_t repeated nargs)
     bool link_fn_nargs(std::string const& module_name,

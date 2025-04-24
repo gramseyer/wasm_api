@@ -31,7 +31,7 @@ Wasmi_WasmRuntime::~Wasmi_WasmRuntime()
 }
 
 std::unique_ptr<WasmRuntime>
-Wasmi_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
+Wasmi_WasmContext::new_runtime_instance(Script const& contract, void* ctxp, const Hash* /*unused*/)
 {
     std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 

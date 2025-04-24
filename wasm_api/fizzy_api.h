@@ -41,7 +41,7 @@ public:
   ~Fizzy_WasmContext();
 
   std::unique_ptr<WasmRuntime> new_runtime_instance(Script const &contract,
-                                                    void *ctxp);
+                                                    void *ctxp, const Hash* /*unused*/);
 
 private:
 };

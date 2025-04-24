@@ -116,7 +116,7 @@ class ExternalCallTest : public ::testing::TestWithParam<wasm_api::SupportedWasm
 
 TEST_P(ExternalCallTest, unlinked_fn)
 {
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     
     // either runtime == nullptr, or error later is allowed
     if (runtime) {
@@ -129,7 +129,7 @@ TEST_P(ExternalCallTest, unlinked_fn)
 TEST_P(ExternalCallTest, runtime_error)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_runtime_error));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
@@ -143,7 +143,7 @@ TEST_P(ExternalCallTest, runtime_error)
 TEST_P(ExternalCallTest, host_error)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_host_error));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
     
     ERROR_GUARD
@@ -156,7 +156,7 @@ TEST_P(ExternalCallTest, host_error)
 TEST_P(ExternalCallTest, other_weird_error)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_bad_alloc));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
@@ -171,7 +171,7 @@ TEST_P(ExternalCallTest, wasm_error)
 {
     // link all the fns, required for MAKEPAD_STITCH
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &good_call));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     auto res = runtime -> invoke("unreachable");
@@ -182,7 +182,7 @@ TEST_P(ExternalCallTest, wasm_error)
 TEST_P(ExternalCallTest, follow_bad_with_good)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &throw_host_error));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
@@ -197,7 +197,7 @@ TEST_P(ExternalCallTest, follow_bad_with_good)
 TEST_P(ExternalCallTest, reentrance)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &reentrance));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     s_runtime = runtime.get();
@@ -214,7 +214,7 @@ TEST_P(ExternalCallTest, reentrance)
 TEST_P(ExternalCallTest, nonzero_return)
 {
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &nonzero_return));
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
 
     ERROR_GUARD
@@ -228,7 +228,7 @@ TEST_P(ExternalCallTest, nonzero_return)
 
 TEST_P(ExternalCallTest, null_handling)
 {
-    EXPECT_TRUE(ctx->new_runtime_instance(null_script) == nullptr);
+    EXPECT_TRUE(ctx->new_runtime_instance(null_script, nullptr) == nullptr);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllEngines, ExternalCallTest,

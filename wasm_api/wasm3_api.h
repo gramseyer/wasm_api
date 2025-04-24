@@ -36,7 +36,8 @@ public:
     {}
 
     std::unique_ptr<WasmRuntime> new_runtime_instance(Script const& contract,
-                                                      void* ctxp) override;
+                                                      void* ctxp,
+                                                      const Hash* /*unused*/) override;
 
 private:
     std::mutex mtx;

@@ -42,7 +42,7 @@ class GasApiTest : public ::testing::TestWithParam<wasm_api::SupportedWasmEngine
     ASSERT_TRUE(ctx->link_fn("test", "good_call", &consume_gas_call2)); // called by "call2"
     ASSERT_TRUE(ctx->link_fn("test", "external_call", &consume_gas_call)); // called by "call1"
 
-    runtime = ctx -> new_runtime_instance(script);
+    runtime = ctx -> new_runtime_instance(script, nullptr);
     ASSERT_TRUE(!!runtime);
   }
 
