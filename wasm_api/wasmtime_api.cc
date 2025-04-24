@@ -40,8 +40,10 @@ Wasmtime_WasmContext::new_runtime_instance(Script const& contract, void* ctxp, c
 {
     std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 
+    const uint8_t* id_ptr = (script_identifier == nullptr) ? nullptr : script_identifier -> data();
+
     void* runtime_pointer = new_wasmtime_runtime(contract.data,
-        contract.len, out -> get_host_call_context(), context_pointer);
+        contract.len, out -> get_host_call_context(), context_pointer, id_ptr);
 
     if (runtime_pointer == nullptr) {
         return nullptr;

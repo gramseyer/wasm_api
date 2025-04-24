@@ -2,7 +2,7 @@ use core::ffi::c_void;
 use core::slice;
 use wasmtime::{Instance, Module, Store, Val};
 
-use crate::wasmtime_context::WasmtimeContext;
+use crate::wasmtime_context::{WasmtimeContext, CacheKey};
 use crate::external_call;
 use crate::invoke_result::{InvokeError, FFIInvokeResult};
 
@@ -77,9 +77,23 @@ fn handle_trap_code(code: &wasmtime::Trap) -> FFIInvokeResult {
 impl WasmtimeRuntime {
     fn new(
         bytes: &[u8],
-        context: &WasmtimeContext,
+        context: &mut WasmtimeContext,
         userctx: *mut c_void,
+        script_id : &Option<CacheKey>
     ) -> Option<WasmtimeRuntime> {
+
+        if let Some(key) = &script_id {
+            let mut cache = context.instance_pre_cache.lock().unwrap();
+            if let Some(inst_pre) = cache.get(key) {
+                let mut store = Store::new(&context.engine, userctx);
+                let instance = inst_pre.instantiate(&mut store).ok()?;
+                return Some(Self {
+                    store : store,
+                    instance: instance
+                });
+            };
+        };
+
         let module = match Module::new(&context.engine, &bytes) {
             Ok(m) => m,
             Err(x) => {
@@ -88,15 +102,17 @@ impl WasmtimeRuntime {
             }
         };
 
+        let instance_pre = context.linker.instantiate_pre(&module).ok()?;
+
+        if let Some(key) = &script_id {
+            let mut cache = context.instance_pre_cache.lock().unwrap();
+            cache.put(*key, instance_pre.clone());
+        }
+
         let mut store = Store::new(&context.engine, userctx);
 
         // TODO(geoff): test to ensure start() function doesn't run
-        let instance = match context.linker.instantiate(&mut store, &module) {
-            Ok(inst) => inst,
-            Err(_) => {
-                return None;
-            }
-        };
+        let instance =  instance_pre.instantiate(&mut store).ok()?;
         Some(Self {
             store: store,
             instance: instance,
@@ -189,21 +205,32 @@ pub extern "C" fn new_wasmtime_runtime(
     bytes: *const u8,
     bytes_len: u32,
     userctx: *mut c_void,
-    wasmtime_context_ptr: *const c_void,
+    wasmtime_context_ptr: *mut c_void,
+    script_identifier_ptr: *const u8
 ) -> *mut c_void {
     if bytes == core::ptr::null() {
         return core::ptr::null_mut();
     }
 
-    assert!(wasmtime_context_ptr != core::ptr::null());
+    let script_id = if script_identifier_ptr == core::ptr::null() {
+        None
+    } else {
+        let mut out : CacheKey = [0; 32];
+        unsafe {
+            core::ptr::copy_nonoverlapping(script_identifier_ptr, out.as_mut_ptr(), 32);
+        }
+        Some(out)
+    };
 
-    let wasmtime_context: &WasmtimeContext = unsafe {
-        &*core::mem::transmute::<_, *mut WasmtimeContext>(wasmtime_context_ptr)
+    assert!(wasmtime_context_ptr != core::ptr::null_mut());
+
+    let wasmtime_context: &mut WasmtimeContext = unsafe {
+        &mut *core::mem::transmute::<_, *mut WasmtimeContext>(wasmtime_context_ptr)
     };
 
     let slice = unsafe { slice::from_raw_parts(bytes, bytes_len as usize) };
 
-    let b = match WasmtimeRuntime::new(&slice, &wasmtime_context, userctx) {
+    let b = match WasmtimeRuntime::new(&slice, wasmtime_context, userctx, &script_id) {
         Some(res) => Box::new(res),
         None => {
             return core::ptr::null_mut();

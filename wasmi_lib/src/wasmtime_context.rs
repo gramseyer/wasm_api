@@ -1,4 +1,4 @@
-use wasmtime::{Caller, Config, Engine, Error, Linker, InstanceAllocationStrategy, PoolingAllocationConfig};
+use wasmtime::{Caller, Config, Engine, Error, Linker, InstanceAllocationStrategy, PoolingAllocationConfig, InstancePre};
 
 use core::ffi::c_void;
 
@@ -6,12 +6,19 @@ use crate::external_call::{HostFnError, TrampolineResult, TrampolineError};
 use crate::external_call;
 use crate::common::{string_from_parts, BorrowBypass, WasmValueType};
 
+use lru::LruCache;
+use std::num::NonZeroUsize;
+use std::sync::Mutex;
+
+pub type CacheKey = [u8; 32]; // sha256(unmetered contract code)
+
 // A WasmtimeContext provides shared data structures
 // for multiple Wasmtime runtimes.
 
 pub struct WasmtimeContext {
     pub engine: Engine,
     pub linker: Linker<*mut c_void>,
+    pub instance_pre_cache : Mutex<LruCache<CacheKey, InstancePre<*mut c_void>>>,
 }
 
 fn wasmtime_handle_trampoline_error(result: TrampolineResult) -> Result<u64, wasmtime::Error> {
@@ -56,6 +63,7 @@ impl WasmtimeContext {
         Some(Self {
             engine: engine.clone(),
             linker: Linker::new(&engine),
+            instance_pre_cache: Mutex::new(LruCache::new(NonZeroUsize::new(10).unwrap())),
         })
     }
 
@@ -72,6 +80,7 @@ impl WasmtimeContext {
         Some(Self {
             engine: engine.clone(),
             linker: Linker::new(&engine),
+            instance_pre_cache: Mutex::new(LruCache::new(NonZeroUsize::new(10).unwrap())),
         })
     }
 
