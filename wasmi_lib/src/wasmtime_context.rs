@@ -9,6 +9,7 @@ use crate::common::{string_from_parts, BorrowBypass, WasmValueType};
 use lru::LruCache;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
+use std::sync::Arc;
 
 pub type CacheKey = [u8; 32]; // sha256(unmetered contract code)
 
@@ -18,7 +19,7 @@ pub type CacheKey = [u8; 32]; // sha256(unmetered contract code)
 pub struct WasmtimeContext {
     pub engine: Engine,
     pub linker: Linker<*mut c_void>,
-    pub instance_pre_cache : Mutex<LruCache<CacheKey, InstancePre<*mut c_void>>>,
+    pub instance_pre_cache : Mutex<LruCache<CacheKey, Arc<InstancePre<*mut c_void>>>>,
 }
 
 fn wasmtime_handle_trampoline_error(result: TrampolineResult) -> Result<u64, wasmtime::Error> {
@@ -65,6 +66,12 @@ impl WasmtimeContext {
             linker: Linker::new(&engine),
             instance_pre_cache: Mutex::new(LruCache::new(NonZeroUsize::new(10).unwrap())),
         })
+    }
+
+    pub fn get_inst_pre(&mut self, key : &CacheKey) -> Option<Arc<InstancePre<*mut c_void>>>
+    {
+        let mut cache = self.instance_pre_cache.lock().unwrap();
+        cache.get(key).cloned()
     }
 
     fn new_winch() -> Option<Self> {
