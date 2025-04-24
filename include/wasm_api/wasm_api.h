@@ -90,6 +90,7 @@ public:
     void* fn,
     uint8_t nargs,
     WasmValueType ret_type) {
+      std::lock_guard lock(link_entry_mutex);
         link_entries.emplace_back(
             module_name,
             fn_name,
@@ -105,9 +106,10 @@ public:
 
 protected:
   WasmContextImpl() = default;
+  
+  std::mutex link_entry_mutex;
 
 private:
-
   std::vector<DefaultLinkEntry> link_entries;
 
   WasmContextImpl(WasmContextImpl const &) = delete;
@@ -185,7 +187,6 @@ public:
     if (!impl) {
         return false;
     }
-    std::lock_guard lock(*mtx);
     return impl -> link_fn_nargs(module_name, fn_name, reinterpret_cast<void *>(f),
                          (kArgCount<Args>() + ... + 0),
                          detail::WasmValueTypeLookup<ret_type>::VAL);
@@ -199,9 +200,8 @@ public:
 
 private:
   std::shared_ptr<detail::WasmContextImpl> impl;
-  std::shared_ptr<std::mutex> mtx;
 
-  SupportedWasmEngine engine_type;
+  const SupportedWasmEngine engine_type;
 
   template<typename T> constexpr static auto kArgCount = [] { return 1; };
 };

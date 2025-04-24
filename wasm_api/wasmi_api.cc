@@ -70,6 +70,7 @@ Wasmi_WasmContext::link_fn_nargs(std::string const& module_name,
     uint8_t nargs,
     WasmValueType ret_type)
 {
+    std::lock_guard lock(link_entry_mutex);
     return wasmi_link_nargs(context_pointer,
                      (const uint8_t*)module_name.c_str(),
                      module_name.size(),

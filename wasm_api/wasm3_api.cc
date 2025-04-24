@@ -40,6 +40,7 @@ Wasm3_WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
 
     std::unique_ptr<WasmRuntime> out = std::make_unique<WasmRuntime>(ctxp);
 
+    std::lock_guard lock(mtx);
     auto module = env.parse_module(contract.data, contract.len);
 
     if (!module) {

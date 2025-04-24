@@ -39,6 +39,7 @@ public:
                                                       void* ctxp) override;
 
 private:
+    std::mutex mtx;
     wasm3::environment env;
     const uint32_t MAX_STACK_BYTES;
 };

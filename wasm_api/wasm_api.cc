@@ -27,7 +27,6 @@
 
 #include <cinttypes>
 #include <cstring>
-#include <mutex>
 #include <variant>
 
 namespace wasm_api
@@ -83,7 +82,6 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
                 return nullptr;
         }
     }())
-    , mtx(std::make_shared<std::mutex>())
     , engine_type(engine)
 {
     if (impl) {
@@ -100,7 +98,6 @@ WasmContext::new_runtime_instance(Script const& contract, void* ctxp)
     {
         return nullptr;
     }
-    std::lock_guard lock(*mtx);
     if (!impl) {
         return nullptr;
     }
@@ -118,6 +115,7 @@ WasmContextImpl::finish_link(std::unique_ptr<WasmRuntime>& pre_link)
     if (!pre_link) {
         return false;
     }
+    std::lock_guard lock(link_entry_mutex);
     for (auto const& entry : link_entries)
     {
         if (!pre_link -> link_fn(entry))
