@@ -84,6 +84,7 @@ WasmContext::WasmContext(const uint32_t MAX_STACK_BYTES,
         }
     }())
     , mtx(std::make_shared<std::mutex>())
+    , engine_type(engine)
 {
     if (impl) {
         if (!impl -> init_success()) {
