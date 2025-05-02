@@ -26,6 +26,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <variant>
 #include <vector>
 #include <span>
 
